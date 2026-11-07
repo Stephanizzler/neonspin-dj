@@ -1486,8 +1486,24 @@ function cap(html){const c=$('hudCap');c.classList.add('fade');setTimeout(()=>{c
 function press(sel){const el=D$(sel);if(!el)return;const r=elRect(el);const t=$('tapfx');t.style.left=r.left+r.width/2+'px';t.style.top=r.top+r.height/2+'px';
   t.classList.remove('go');void t.offsetWidth;t.classList.add('go');el.classList.add('demo-press');setTimeout(()=>el.classList.remove('demo-press'),380)}
 async function scene(n,total,sels,html,body){$('hudProg').style.width=Math.round(n/total*100)+'%';if(sels!==undefined)focus(sels);if(html)cap(html);await dwait(900);await body()}
-async function demoScratch(d){d.touching=true;post({t:'flux',d:d.k,on:true});post({t:'touch',d:d.k,on:true});
-  for(const amt of[-0.22,0.22,-0.22,0.22,-0.12,0.12,-0.12,0.12,-0.22,0.22]){const n=8;for(let i=0;i<n;i++){post({t:'scratch',d:d.k,delta:amt/n});await dwait(26)}}
+/* a smooth, beat-locked scratch routine: the "hand" moves every frame with eased strokes, like a real arm */
+async function demoScratch(d,onTransformer){
+  const bl=60/(d.bpm*ratio(d));
+  await dwait(Math.max(0,(1-frac((dispPos(d)-d.first)*d.bpm/60))*bl*1000-30));     // start on the next beat
+  const P=[[.5,-.34],[.5,.34],[.5,-.34],[.5,.34],                                   // baby scratches
+           [.25,-.24],[.25,.24],[.25,-.24],[.25,.24],[.25,-.24],[.25,.24],[.25,-.24],[.25,.24], // faster strokes
+           [.5,-.36,'tr'],[.5,.36,'tr'],[.5,-.36,'tr'],[.5,.36,'tr']];             // transformer: fader cuts while moving
+  const prevCurve=mix.curve;d.touching=true;post({t:'flux',d:d.k,on:true});post({t:'touch',d:d.k,on:true});
+  for(const[b,disp,mode]of P){
+    if(mode==='tr'&&onTransformer){onTransformer();onTransformer=null;mix.curve='cut';applyXf()}
+    const dur=b*bl*1000,t0=performance.now();let last=0;
+    await new Promise(res=>{const step=()=>{if(DEMO.abort)return res();
+      const u=Math.min(1,(performance.now()-t0)/dur),o=disp*(1-Math.cos(Math.PI*u))/2;
+      if(o!==last){post({t:'scratch',d:d.k,delta:o-last});last=o}
+      if(mode==='tr')xfader.set(Math.floor(u*4)%2?-1:1);                            // four quick cuts per stroke
+      if(u<1)requestAnimationFrame(step);else res()};step()});
+  }
+  xfader.set(1);mix.curve=prevCurve;applyXf();
   d.touching=false;post({t:'touch',d:d.k,on:false});setTimeout(()=>post({t:'flux',d:d.k,on:d.flux}),60)}
 async function demoPrepare(){
   for(const d of decks){if(d.playing){d.playing=false;post({t:'play',d:d.k,on:false})}if(d.roll)stopRoll(d);d.loop=null;d.loopIn=null;postLoop(d);d.fx.on=false;applyFx(d.k);
@@ -1510,7 +1526,7 @@ async function runDemo(){
   await scene(n++,T,'.mx-xf','Slide the <b>crossfader</b> to bring Deck B into the mix.',async()=>{await tween(v=>xfader.set(v),-1,0,3200);await dwait(800)});
   await scene(n++,T,['#mxL','#mxR'],'Swap the bass: Deck A\'s <b>LOW</b> goes down while Deck B\'s comes back up.',async()=>{press('[data-mid="L:kn:lo"]');await Promise.all([tween(v=>ui.L.kn.lo.set(v),0,-1,2600),tween(v=>ui.R.kn.lo.set(v),-1,0,2600)]);await dwait(800)});
   await scene(n++,T,'.mx-xf','Finish the mix: crossfader across, and Deck B plays on its own.',async()=>{await tween(v=>xfader.set(v),0,1,2400);press('#dkL [data-a=play]');togglePlay(A);ui.L.kn.lo.set(0);await dwait(800)});
-  await scene(n++,T,['#dkR .jogbox'],'<b>Scratch</b>: hold the middle of the platter and rock it back and forth.',async()=>{press('#jogR');await demoScratch(B);await dwait(900)});
+  await scene(n++,T,['#dkR .jogbox'],'<b>Scratch</b>: hold the middle of the platter and rock it back and forth, in time with the beat.',async()=>{press('#jogR');await demoScratch(B,()=>cap('Add quick <b>crossfader</b> cuts while you scratch: that\'s a <b>transformer</b> scratch.'));await dwait(1200)});
   await scene(n++,T,['#dkR .ptabs','#dkR .panel'],'<b>Hot cues</b> save a moment. Tap the pad again to jump straight back to it.',async()=>{setPanel('R','cues');await dwait(400);press('#dkR [data-hot="0"]');padDown('R',0);await dwait(2200);press('#dkR [data-hot="0"]');padDown('R',0);await dwait(1600)});
   await scene(n++,T,['#dkR .ptabs','#dkR .panel'],'<b>LOOP</b> repeats 4 beats in time. Halve it for a build-up.',async()=>{setPanel('R','loop');await dwait(400);press('#dkR [data-a=lauto]');autoLoop(B);await dwait(2400);
     for(let i=0;i<2;i++){press('#dkR [data-a=lhalf]');loopSize(B,0.5);await dwait(1300)}press('#dkR [data-a=lauto]');autoLoop(B);B.lsize=4;refreshAll();await dwait(700)});
