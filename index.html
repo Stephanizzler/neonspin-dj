@@ -159,16 +159,28 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 .fxv{flex:1;align-self:center;font-family:var(--f-mono);font-size:11px;color:var(--muted);text-align:center;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fxon{flex:0 0 74px}
 .xdeck{align-items:stretch}
-.xplay{flex:0 0 58px;border-radius:12px;border:1.5px solid color-mix(in srgb,var(--go) 60%,transparent);background:var(--well);color:var(--go);font-size:20px;font-weight:800;touch-action:none}
+.xplay{flex:0 0 52px;border-radius:12px;border:1.5px solid color-mix(in srgb,var(--go) 60%,transparent);background:var(--well);color:var(--go);font-size:20px;font-weight:800;touch-action:none}
 .xplay.on{background:var(--go);color:var(--screen)}
 .xinfo{flex:1;min-width:0;border-radius:12px;border:1px solid var(--edge-hi);background:var(--screen);display:flex;flex-direction:column;justify-content:center;gap:4px;padding:0 10px;text-align:left}
 .xinfo b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--xc)}
 .xbar{display:block;height:4px;background:#221d44;border-radius:2px;overflow:hidden}.xbar i{display:block;height:100%;width:0;background:var(--xc)}
 .xinfo small{font-family:var(--f-mono);font-size:10.5px;color:var(--muted);white-space:nowrap}
-.xsync{flex:0 0 56px;border-radius:12px;border:1.5px solid color-mix(in srgb,var(--xc) 55%,transparent);background:var(--well);font-weight:800;font-size:12px;color:var(--xc)}
+.xsync{flex:0 0 50px;border-radius:12px;border:1.5px solid color-mix(in srgb,var(--xc) 55%,transparent);background:var(--well);font-weight:800;font-size:12px;color:var(--xc)}
 .xsync.on{background:var(--xc);color:var(--screen)}
-.xfxt{flex:0 0 78px}.xfxt b{color:var(--xc);font-size:14px}
+.xfxt{flex:0 0 72px}.xfxt b{color:var(--xc);font-size:14px}
 .xdeck .knob-wrap{justify-content:center}
+.xrow{flex:1;display:flex;gap:6px;min-width:0}
+.xmode{flex:0 0 66px;display:flex;flex-direction:column;gap:4px}
+.xmode button{flex:1;border-radius:9px;border:1px solid var(--edge-hi);background:var(--well);font-size:10.5px;font-weight:800;letter-spacing:.08em;color:var(--muted);padding:0}
+.xmode button.on{background:var(--xc);border-color:var(--xc);color:var(--screen)}
+.xio{flex:0 0 62px;display:flex;flex-direction:column;gap:4px}
+.xio button{flex:1;border-radius:9px;border:1.5px solid var(--edge-hi);background:var(--well);font-size:13px;font-weight:800;color:var(--ink);padding:0;line-height:1;touch-action:none}
+.xio button small{display:block;font-size:8.5px;font-weight:600;color:var(--muted);letter-spacing:.06em;margin-top:1px}
+.xio button.on{background:var(--cue);border-color:var(--cue);color:var(--screen)}.xio button.on small{color:var(--screen)}
+.spad{flex:1;min-width:0;border-radius:12px;border:1.5px dashed var(--edge-hi);background:var(--well);color:var(--dim);font-weight:800;font-size:17px;padding:2px 4px;touch-action:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;overflow:hidden}
+.spad small{font-size:9.5px;font-weight:600;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.spad.set{border-style:solid;border-color:var(--xc);color:var(--xc);background:color-mix(in srgb,var(--xc) 14%,var(--well))}
+.spad.hit{background:var(--xc);color:var(--screen)}
 .dropping{outline:2px dashed var(--dc);outline-offset:-4px}
 
 /* faders and knobs */
@@ -688,7 +700,7 @@ const FX_NAME={DELAY:'Delay',FLANGER:'Flanger',STUTTER:'Stutter',HPF:'High-pass'
 const FX_P={DELAY:['TIME','FDBK'],FLANGER:['RATE','DEPTH'],STUTTER:['RATE',null],HPF:['FREQ','RES'],LPF:['FREQ','RES']};
 const ECHO_BEATS=[1/8,1/4,3/8,1/2,3/4,1,2],FL_BEATS=[1,2,4,8,16],ST_BEATS=[1/2,1/4,1/8,1/16];
 const decks=[0,1,2,3].map(k=>({k,letter:LET[k],color:DC[k],name:'',artist:'',buf:null,peaks:null,bpm:0,first:0,fader:0,range:0.08,playing:false,cue:0,hot:[null,null,null,null],loop:null,loopIn:null,lsize:4,
-  sync:k>=2,vinyl:true,sens:1,keylock:false,rev:false,flux:false,roll:null,
+  sync:k>=2,vinyl:true,xmode:'track',slots:[null,null,null,null],slotNext:0,sv:[],sIn:null,sFrom:0,sens:1,keylock:false,rev:false,flux:false,roll:null,
   pos:0,v:0,recv:0,seq:0,err:0,touching:false,jogBend:0,btnBend:0,wheelBend:0,sentBend:0,omega:0,lastJog:0,dur:0,
   fx:{type:k?'FLANGER':'DELAY',on:false,wet:0.5,p1:0.5,p2:0.4}}));
 const mix={ch:[0,1,2,3].map(()=>({trim:0,hi:0,mhi:0,mlo:0,lo:0,filt:0,fader:0.8,pfl:false})),xf:0,curve:'blend',master:0.8,cueMix:0.3,cueVol:0.8,mic:0.7,micOn:false};
@@ -932,7 +944,11 @@ function deckHTML(s){const k=s==='L'?0:1;return`<div class="deck side-${s}" id="
     <div class="pane" data-pane="loop"><button class="pbtn" data-a="lin" data-mid="${s}:lin">IN</button><button class="pbtn" data-a="lout" data-mid="${s}:lout">OUT</button><button class="pbtn" data-a="lhalf" data-mid="${s}:lhalf" aria-label="Halve loop">÷2</button><div class="lsize"><span id="ls${s}">4</span><small>BEATS</small></div><button class="pbtn" data-a="ldbl" data-mid="${s}:ldbl" aria-label="Double loop">×2</button><button class="pbtn go" data-a="lauto" data-mid="${s}:lauto">LOOP</button></div>
     <div class="pane" data-pane="fx"><button class="fxt" data-a="fxtype" data-mid="${s}:fxtype" aria-label="Change effect"><span>EFFECT ⟳</span><b id="fxn${s}">Delay</b></button><div class="fxk" id="fxk${s}"></div><span class="fxv" id="fxv${s}"></span><button class="pbtn fxon" data-a="fxon" data-mid="${s}:fxon">ON</button></div>
     <div class="pane" data-pane="modes"><button class="pbtn" data-a="master" data-mid="${s}:master"><small>leader</small>MASTER</button><button class="pbtn" data-a="key" data-mid="${s}:key"><small>keylock</small>KEY</button><button class="pbtn" data-a="rev" data-mid="${s}:rev"><small>backwards</small>REV</button><button class="pbtn" data-a="brake" data-mid="${s}:brake"><small>stop</small>BRAKE</button><button class="pbtn" data-a="flux" data-mid="${s}:flux"><small>carry on</small>SLIP</button><button class="pbtn" data-a="vinyl" data-mid="${s}:vinyl"><small>scratch</small>VINYL</button><button class="pbtn" data-a="load"><small>library</small>LOAD</button></div>
-    <div class="pane xdeck" data-pane="xd" style="--xc:${DC[k+2]}"><button class="xplay" data-x="play" data-mid="${s}:xplay" aria-label="Play or pause deck ${LET[k+2]}">▶</button><button class="xinfo" data-x="load" aria-label="Load a track on deck ${LET[k+2]}"><b id="xt${s}">Deck ${LET[k+2]}</b><span class="xbar"><i id="xp${s}"></i></span><small id="xm${s}"></small></button><button class="xsync" data-x="sync" data-mid="${s}:xsync">SYNC</button><div id="xg${s}"></div><button class="fxt xfxt" data-x="fxtype" aria-label="Change effect on deck ${LET[k+2]}"><span>FX ⟳</span><b id="xfn${s}">Delay</b></button><div id="xa${s}"></div></div>
+    <div class="pane xdeck" data-pane="xd" style="--xc:${DC[k+2]}">
+      <div class="xmode" role="group" aria-label="Deck ${LET[k+2]} mode"><button data-x="mtrack">TRACK</button><button data-x="mpads">SAMPLER</button></div>
+      <div class="xrow xtrack"><button class="xplay" data-x="play" data-mid="${s}:xplay" aria-label="Play or pause deck ${LET[k+2]}">▶</button><button class="xinfo" data-x="load" aria-label="Load a track on deck ${LET[k+2]}"><b id="xt${s}">Deck ${LET[k+2]}</b><span class="xbar"><i id="xp${s}"></i></span><small id="xm${s}"></small></button><button class="xsync" data-x="sync" data-mid="${s}:xsync">SYNC</button><button class="fxt xfxt" data-x="fxtype" aria-label="Change effect on deck ${LET[k+2]}"><span>FX ⟳</span><b id="xfn${s}">Delay</b></button><div id="xa${s}"></div></div>
+      <div class="xrow xpads" hidden><div class="xio"><button data-x="sin" data-mid="${s}:xsin">IN<small>from ${LET[k]}</small></button><button data-x="sout" data-mid="${s}:xsout">OUT</button></div>${[0,1,2,3].map(i=>`<button class="spad" data-sp="${i}" data-mid="${s}:xsp${i}"></button>`).join('')}</div>
+      <div id="xg${s}"></div></div>
   </div></div>`}
 $('deckL').outerHTML=deckHTML('L');$('deckR').outerHTML=deckHTML('R');
 function setPanel(s,p){panelOf[s]=p;refreshAll()}
@@ -984,7 +1000,13 @@ for(const s of['L','R']){
    u.xg=makeKnob($('xg'+s),{label:'Gain',min:0,max:1,value:0.8,def:0.8,mid:`${s}:xgain`,onChange:v=>{mix.ch[xk].fader=v;applyMix(xk)}});
    u.xa=makeKnob($('xa'+s),{label:'FX',min:0,max:1,value:0,def:0,mid:`${s}:xfx`,onChange:v=>{setXAmount(decks[xk],v);refreshAll()}});
    pane.addEventListener('click',e=>{const b=e.target.closest('[data-x]');if(!b||stage.classList.contains('learning'))return;const d=decks[xk],a=b.dataset.x;
-     if(a==='play')togglePlay(d);else if(a==='load')openLib(xk);else if(a==='sync')toggleSync(d);else if(a==='fxtype')nextFx(d);refreshAll()})}
+     if(a==='play')togglePlay(d);else if(a==='load')openLib(xk);else if(a==='sync')toggleSync(d);else if(a==='fxtype')nextFx(d);
+     else if(a==='mtrack')d.xmode='track';else if(a==='mpads')d.xmode='pads';else if(a==='sin')sampIn(s);else if(a==='sout')sampOut(s);refreshAll()});
+   pane.querySelectorAll('[data-sp]').forEach(b=>{const i=+b.dataset.sp;let tmr=null,held=false;
+     b.addEventListener('pointerdown',e=>{if(stage.classList.contains('learning'))return;e.preventDefault();held=false;
+       if(!decks[xk].slots[i]){playSlot(s,i);held=true;return}
+       tmr=setTimeout(()=>{held=true;clearSlot(s,i)},650)});
+     b.addEventListener('pointerup',()=>{clearTimeout(tmr);if(!held)playSlot(s,i);held=true});b.addEventListener('pointercancel',()=>clearTimeout(tmr))})}
 }
 document.querySelectorAll('.pfl').forEach(b=>b.onclick=()=>{if(stage.classList.contains('learning'))return;togglePfl(b.dataset.pfl)});
 function togglePfl(s){const k=view[s];mix.ch[k].pfl=!mix.ch[k].pfl;applyMix(k);if(mix.ch[k].pfl&&outCfg.mode==='off')toast('Pick a headphone output in Setup to hear the cue');refreshAll()}
@@ -1096,12 +1118,43 @@ function drawVU(id,lv){const c=$(id),[w,h]=fit(c),g=c.getContext('2d');g.clearRe
 function xAmount(d){const f=d.fx;return!f.on?0:(f.type==='DELAY'||f.type==='FLANGER')?f.wet:f.p1}
 function setXAmount(d,v){const f=d.fx;f.on=v>0.02;if(f.type==='DELAY'||f.type==='FLANGER')f.wet=v;else{f.p1=v;f.wet=1}
   if(f.type==='STUTTER'){ensureAudio();if(f.on)startRoll(d);else stopRoll(d)}applyFx(d.k)}
+/* ---------- sampler: IN/OUT grabs part of the song on the deck above and saves it to a pad ---------- */
+const sampSrc=s=>decks[s==='L'?0:1],sampDeck=s=>decks[s==='L'?2:3];
+function sampIn(s){const src=sampSrc(s),x=sampDeck(s);if(!src.buf){toast(`Load a track on Deck ${src.letter} first`);return}
+  x.sIn=snapBeat(src,dispPos(src));x.sFrom=src.k;refreshAll();toast(`Sample start set on Deck ${src.letter}. Press OUT where it should end.`,2400)}
+async function sampOut(s){const x=sampDeck(s);if(x.sIn==null){toast(`Press IN first, while Deck ${sampSrc(s).letter} plays`);return}
+  const src=decks[x.sFrom];let out=dispPos(src);
+  if(src.bpm){const bl=60/src.bpm,nb=Math.max(0.25,Math.round((out-x.sIn)/bl*4)/4);out=x.sIn+nb*bl}
+  if(out-x.sIn<0.06){toast('That sample is too short. Press OUT a little later.');return}
+  try{await ensureAudio()}catch(e){return}
+  const b=src.buf,sr=b.sr,i0=Math.max(0,Math.round(x.sIn*sr)),i1=Math.min(b.L.length,Math.round(out*sr)),n=i1-i0;if(n<64)return;
+  const ab=ctx.createBuffer(2,n,sr),fade=Math.min(Math.round(sr*0.004),n>>2);
+  for(let c=0;c<2;c++){const from=(c?b.R:b.L).subarray(i0,i1),to=ab.getChannelData(c);to.set(from);for(let k=0;k<fade;k++){const g=k/fade;to[k]*=g;to[n-1-k]*=g}}
+  let i=x.slots.findIndex(v=>!v);if(i<0){i=x.slotNext%4;x.slotNext++}
+  const beats=src.bpm?(out-x.sIn)*src.bpm/60:0;x.slots[i]={ab,bpm:src.bpm,beats,from:src.letter,name:src.name};x.sIn=null;
+  refreshAll();flashPad(s,i);toast(`Saved to sampler pad ${i+1}${beats?` · ${beatsLbl(beats)}`:''}`)}
+async function playSlot(s,i){const x=sampDeck(s),sl=x.slots[i];
+  if(!sl){toast(`Press IN and OUT while Deck ${sampSrc(s).letter} plays to sample part of the song`,3000);return}
+  try{await ensureAudio()}catch(e){return}
+  if(x.sv[i])try{x.sv[i].stop()}catch(e){}
+  const v=ctx.createBufferSource();v.buffer=sl.ab;const m=decks[master].playing?decks[master]:(decks.find(d=>d.k<2&&d.playing&&d.bpm)||decks[master]);let when=ctx.currentTime;
+  if(m.playing&&m.bpm){const eff=m.bpm*ratio(m);if(sl.bpm)v.playbackRate.value=fold(eff/sl.bpm);
+    const ph=frac((dispPos(m)-m.first)*m.bpm/60*2),wait=(1-ph)*30/eff;if(wait>0.012&&wait<0.6)when+=wait}   /* start on the next eighth-note */
+  v.connect(G.ch[x.k].trim);v.start(when);x.sv[i]=v;setTimeout(()=>flashPad(s,i),Math.max(0,(when-ctx.currentTime)*1000))}
+function beatsLbl(x){const q=Math.round(x*4)/4,w=Math.floor(q),f=['','¼','½','¾'][Math.round((q-w)*4)];return(w||!f?w:'')+f+(q===1?' beat':' beats')}
+function flashPad(s,i){const b=$('dk'+s).querySelector(`[data-sp="${i}"]`);if(!b)return;b.classList.add('hit');setTimeout(()=>b.classList.remove('hit'),200)}
+function clearSlot(s,i){const x=sampDeck(s);if(x.sv[i])try{x.sv[i].stop()}catch(e){}x.slots[i]=null;refreshAll();toast(`Sampler pad ${i+1} cleared`)}
 function refreshX(s){const xk=s==='L'?2:3,d=decks[xk],u=ui[s],pane=$('dk'+s).querySelector('[data-pane=xd]');if(!pane||!u.xg)return;
   $('xt'+s).textContent=d.buf||d.loading?d.name:'Tap to load a track';
   $('xm'+s).textContent=(d.sync?'SYNCED':'FREE')+' · '+(d.bpm?(d.bpm*ratio(d)).toFixed(1)+' BPM':'—');
   const pb=pane.querySelector('[data-x=play]');pb.classList.toggle('on',d.playing);pb.textContent=d.playing?'❚❚':'▶';
   pane.querySelector('[data-x=sync]').classList.toggle('on',d.sync);$('xfn'+s).textContent=FX_NAME[d.fx.type];
-  u.xg.set(mix.ch[xk].fader,false);u.xa.set(xAmount(d),false)}
+  u.xg.set(mix.ch[xk].fader,false);u.xa.set(xAmount(d),false);
+  const pads=d.xmode==='pads';pane.querySelector('.xtrack').hidden=pads;pane.querySelector('.xpads').hidden=!pads;
+  pane.querySelector('[data-x=mtrack]').classList.toggle('on',!pads);pane.querySelector('[data-x=mpads]').classList.toggle('on',pads);
+  pane.querySelector('[data-x=sin]').classList.toggle('on',d.sIn!=null);
+  pane.querySelectorAll('[data-sp]').forEach(b=>{const sl=d.slots[+b.dataset.sp],n=+b.dataset.sp+1;b.classList.toggle('set',!!sl);
+    b.innerHTML=sl?`S${n}<small>${sl.beats?beatsLbl(sl.beats):'sample'}</small>`:`S${n}<small>empty</small>`})}
 function refreshText(){
   for(const s of['L','R']){const d=sideDeck(s),p=dispPos(d),r=ratio(d);
     $('el'+s).textContent=fmtT(p);$('rm'+s).textContent='-'+fmtT(d.dur-p);
@@ -1241,7 +1294,7 @@ const REG={};
       [s+':fxon']:tap(()=>toggleFx(D())),[s+':fxtype']:tap(()=>nextFx(D())),
       [s+':lin']:tap(()=>loopIn(D())),[s+':lout']:tap(()=>loopOut(D())),[s+':lhalf']:tap(()=>loopSize(D(),0.5)),[s+':ldbl']:tap(()=>loopSize(D(),2)),[s+':lauto']:tap(()=>autoLoop(D())),
       [s+':bendm']:{btn:down=>{const d=D();d.btnBend=down?-0.04:0;updateBend(d)}},[s+':bendp']:{btn:down=>{const d=D();d.btnBend=down?0.04:0;updateBend(d)}},
-      [s+':pfl']:tap(()=>togglePfl(s)),[s+':xplay']:tap(()=>togglePlay(decks[s==='L'?2:3])),[s+':xsync']:tap(()=>toggleSync(decks[s==='L'?2:3])),
+      [s+':pfl']:tap(()=>togglePfl(s)),[s+':xplay']:tap(()=>togglePlay(decks[s==='L'?2:3])),[s+':xsin']:tap(()=>sampIn(s)),[s+':xsout']:tap(()=>sampOut(s)),[s+':xsp0']:tap(()=>playSlot(s,0)),[s+':xsp1']:tap(()=>playSlot(s,1)),[s+':xsp2']:tap(()=>playSlot(s,2)),[s+':xsp3']:tap(()=>playSlot(s,3)),[s+':xsync']:tap(()=>toggleSync(decks[s==='L'?2:3])),
       [s+':xgain']:{val:v=>u.xg.midi(v)},[s+':xfx']:{val:v=>u.xa.midi(v)},
       [s+':tempo']:{val:v=>u.tf.midi(v)},[s+':cf']:{val:v=>u.cf.midi(v)},[s+':sens']:{val:v=>u.sens.midi(v)},
       [s+':jog']:{jog:dt=>jogTicks(s,dt,true)},[s+':jogtouch']:{btn:down=>{const d=D();if(!d.buf)return;ensureAudio();midiTouch[s]=down;if(d.vinyl||!d.playing){d.touching=down;post({t:'touch',d:d.k,on:down})}}}});
@@ -1447,7 +1500,7 @@ async function demoPrepare(){
   setMaster(0);for(const s of['L','R']){for(const k in ui[s].kn)ui[s].kn[k].set(0);ui[s].cf.set(0.8)}
   ui.R.xg.set(0);xfader.set(-1);mix.curve='blend';applyXf();panelOf.L=panelOf.R='cues';refreshAll()}
 async function runDemo(){
-  const A=decks[0],B=decks[1],Dd=decks[3],T=17;let n=0;
+  const A=decks[0],B=decks[1],Dd=decks[3],T=18;let n=0;
   await scene(n++,T,null,'Welcome to <b>SoundLab DJ</b>. Here\'s a real mix, one feature at a time.',()=>dwait(2600));
   await scene(n++,T,['#dkL .tcol','#jogL'],'<b>PLAY</b> starts Deck A. The platter spins, and its outer ring shows how far through the track you are.',async()=>{press('#dkL [data-a=play]');togglePlay(A);await dwait(3800)});
   await scene(n++,T,'#strips','The waveforms show the beats coming up. The <b>Beats</b> bar compares Deck A and Deck B.',()=>dwait(3800));
@@ -1468,6 +1521,11 @@ async function runDemo(){
     await tween(v=>ui.R.fx.p1.set(v),0.05,0.85,2000);await tween(v=>ui.R.fx.p1.set(v),0.85,0.05,1600);toggleFx(B);await dwait(400)});
   if(Dd.buf)await scene(n++,T,['#dkR .ptabs','#dkR .panel'],'<b>Deck D</b> layers an extra track, synced automatically, with its own gain and FX.',async()=>{setPanel('R','xd');await dwait(400);press('#dkR [data-x=play]');if(!Dd.sync)toggleSync(Dd);togglePlay(Dd);
     await tween(v=>ui.R.xg.set(v),0,0.75,1800);await dwait(2600);await tween(v=>ui.R.xg.set(v),0.75,0,1400);togglePlay(Dd)});else n++;
+  await scene(n++,T,['#dkR .ptabs','#dkR .panel'],'The <b>Sampler</b> grabs part of the song: <b>IN</b> marks the start, <b>OUT</b> the end, and it saves to a pad.',async()=>{
+    setPanel('R','xd');Dd.xmode='pads';Dd.slots=[null,null,null,null];Dd.slotNext=0;refreshAll();ui.R.xg.set(0.85);await dwait(700);
+    const bl=60/(B.bpm*ratio(B));press('#dkR [data-x=sin]');sampIn('R');await dwait(bl*2000);press('#dkR [data-x=sout]');await sampOut('R');await dwait(1100);
+    cap('Tap the pad to fire the sample. It lands on the beat, at the mix tempo.');
+    for(const gap of[2,2,1,1,0.5,0.5]){press('#dkR [data-sp="0"]');playSlot('R',0);await dwait(gap*bl*1000)}await dwait(900);Dd.xmode='track';Dd.slots=[null,null,null,null];refreshAll()});
   await scene(n++,T,['#recBtn','#libBtn'],'<b>REC</b> records your mix. <b>Library</b> is where you add your own music and playlists.',async()=>{press('#recBtn');await dwait(1600);press('#libBtn');await dwait(1800)});
   await scene(T,T,null,'Your turn! Press <b>PLAY</b> and start mixing.',()=>dwait(2600));
 }
