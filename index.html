@@ -428,6 +428,9 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
             <option value="4ch">Outputs 3–4 of a 4-output interface</option></select></label>
           <label for="selPh">Headphone device<select id="selPh"><option value="">Choose a device</option></select></label>
           <div class="row"><button class="tb sm" id="devNames">Show device names</button><button class="tb sm" id="devRefresh">Refresh list</button></div>
+          <label for="phDelay"><span>Speaker delay: <b class="mono" id="phDelayV">0 ms</b></span><input type="range" id="phDelay" min="0" max="400" step="5" value="0"></label>
+          <div class="row"><button class="tb sm" id="phTest">Play test clicks</button></div>
+          <p>Bluetooth speakers play a little late, so your headphones end up ahead of the speaker. Play the test clicks and slide until the speaker and headphone clicks sound like one.</p>
           <p>Split cue works on any stereo output, including a phone. Use a 3.5 mm to 2× RCA cable: white goes to the speakers, red to your headphones.</p>
         </div>
         <div class="card">
@@ -746,7 +749,8 @@ async function initAudio(){
     fxIn.connect(dry);dry.connect(post_);fxIn.connect(send);wet.connect(post_);
     post_.connect(fader);fader.connect(an);fader.connect(xf);xf.connect(masterG);post_.connect(pfl);pfl.connect(cueBus);
     return{trim,lo,mlo,mhi,hi,lp,hp,fxIn,dry,send,wet,post:post_,fader,xf,pfl,an,fxNodes:[]}});
-  G={masterG,lim,mainOut,mL,mR,spec,ch,cueBus,cueA,cueB,phonesG,micG,recDest,buf:new Float32Array(1024),fbuf:new Uint8Array(1024),routeNodes:[]};
+  const phDelay=ctx.createDelay(1);phonesG.connect(phDelay);phDelay.delayTime.value=(outCfg.delay||0)/1000;
+  G={masterG,lim,mainOut,mL,mR,spec,ch,cueBus,cueA,cueB,phonesG,phDelay,micG,recDest,buf:new Float32Array(1024),fbuf:new Uint8Array(1024),routeNodes:[]};
   decks.forEach(d=>buildFx(d.k));
   applyMixAll();route();
   for(const d of decks){if(d.buf)sendLoad(d);post({t:'tempo',d:d.k,rate:rate(d)});if(d.sync)post({t:'sync',d:d.k,on:true});if(d.loop)post({t:'loop',d:d.k,on:true,s:d.loop.s,e:d.loop.e});
@@ -806,20 +810,20 @@ function startRoll(d){if(!d.buf||!d.bpm)return;const sl=60/d.bpm*fxInfo(d).b,p=d
 function stopRoll(d){if(!d.roll)return;const r=d.roll;d.roll=null;postLoop(d);if(!r.flux)setTimeout(()=>post({t:'flux',d:d.k,on:false}),40)}
 
 /* ---------- output routing: main, headphone cue, split cue, 4-channel ---------- */
-const outCfg=Object.assign({main:'',mode:'off',phones:'',mic:''},LS.get('ph-out',{}));
+const outCfg=Object.assign({main:'',mode:'off',phones:'',mic:'',delay:0},LS.get('ph-out',{}));
 let phonesEl=null;
 function route(){if(!G)return;const dst=ctx.destination;
-  try{G.mainOut.disconnect()}catch(e){}try{G.phonesG.disconnect()}catch(e){}G.routeNodes.forEach(n=>{try{n.disconnect()}catch(e){}});G.routeNodes=[];
+  try{G.mainOut.disconnect()}catch(e){}try{G.phDelay.disconnect()}catch(e){}G.routeNodes.forEach(n=>{try{n.disconnect()}catch(e){}});G.routeNodes=[];
   if(phonesEl){phonesEl.pause();phonesEl.srcObject=null}
   let mode=outCfg.mode;
   if(mode==='4ch'&&dst.maxChannelCount<4){toast(`This output has ${dst.maxChannelCount} channels. Pick a 4-output interface as the main output first.`,5000);mode='off'}
   try{dst.channelCount=mode==='4ch'?4:2;dst.channelInterpretation=mode==='4ch'?'discrete':'speakers'}catch(e){}
   if(mode==='split'){const m=ctx.createChannelMerger(2),mono=()=>{const g=ctx.createGain();g.channelCount=1;g.channelCountMode='explicit';g.channelInterpretation='speakers';return g},a=mono(),b=mono();
-    G.mainOut.connect(a);G.phonesG.connect(b);a.connect(m,0,0);b.connect(m,0,1);m.connect(dst);G.routeNodes.push(m,a,b)}
-  else if(mode==='4ch'){const m=ctx.createChannelMerger(4),s1=ctx.createChannelSplitter(2),s2=ctx.createChannelSplitter(2);G.mainOut.connect(s1);G.phonesG.connect(s2);
+    G.mainOut.connect(a);G.phDelay.connect(b);a.connect(m,0,0);b.connect(m,0,1);m.connect(dst);G.routeNodes.push(m,a,b)}
+  else if(mode==='4ch'){const m=ctx.createChannelMerger(4),s1=ctx.createChannelSplitter(2),s2=ctx.createChannelSplitter(2);G.mainOut.connect(s1);G.phDelay.connect(s2);
     s1.connect(m,0,0);s1.connect(m,1,1);s2.connect(m,0,2);s2.connect(m,1,3);m.connect(dst);G.routeNodes.push(m,s1,s2)}
   else{G.mainOut.connect(dst);
-    if(mode==='device'){if(!G.phDest)G.phDest=ctx.createMediaStreamDestination();G.phonesG.connect(G.phDest);phonesEl=phonesEl||new Audio();phonesEl.srcObject=G.phDest.stream;
+    if(mode==='device'){if(!G.phDest)G.phDest=ctx.createMediaStreamDestination();G.phDelay.connect(G.phDest);phonesEl=phonesEl||new Audio();phonesEl.srcObject=G.phDest.stream;
       const go=()=>phonesEl.play().catch(()=>{});
       if(outCfg.phones&&phonesEl.setSinkId)phonesEl.setSinkId(outCfg.phones).then(go).catch(e=>toast('Headphone device refused: '+(e.message||e.name),5000));else{go();if(!outCfg.phones)toast('Choose a headphone device in Setup')}}}
 }
@@ -1243,6 +1247,12 @@ $('selMain').onchange=async e=>{outCfg.main=e.target.value;LS.set('ph-out',outCf
   if(!ctx.setSinkId){toast('This browser cannot pick an output device');return}try{await ctx.setSinkId(outCfg.main);toast('Main output changed');route()}catch(err){toast('That output was refused: '+(err.message||err.name),5000)}};
 $('selPhMode').onchange=async e=>{outCfg.mode=e.target.value;LS.set('ph-out',outCfg);try{await ensureAudio()}catch(err){return}route();
   if(outCfg.mode!=='off'&&!mix.ch.some(c=>c.pfl))toast('Press CUE on a mixer channel to send it to your headphones')};
+$('phDelay').value=outCfg.delay||0;$('phDelayV').textContent=(outCfg.delay||0)+' ms';
+$('phDelay').oninput=e=>{outCfg.delay=+e.target.value;$('phDelayV').textContent=outCfg.delay+' ms';LS.set('ph-out',outCfg);if(G)G.phDelay.delayTime.setTargetAtTime(outCfg.delay/1000,ctx.currentTime,0.02)};
+$('phTest').onclick=async()=>{try{await ensureAudio()}catch(e){return}if(outCfg.mode==='off'){toast('Choose a headphone cue setting first');return}
+  const sr=ctx.sampleRate,n=Math.round(sr*0.03),b=ctx.createBuffer(1,n,sr),a=b.getChannelData(0);for(let i=0;i<n;i++)a[i]=Math.sin(2*Math.PI*1800*i/sr)*Math.exp(-i/sr*120)*0.8;
+  const t0=ctx.currentTime+0.1;for(let k=0;k<8;k++){for(const dst of[G.masterG,G.phonesG]){const s=ctx.createBufferSource();s.buffer=b;s.connect(dst);s.start(t0+k*0.5)}}
+  toast('8 clicks on the speaker and in the headphones. Slide until they line up.',4200)};
 $('selPh').onchange=e=>{outCfg.phones=e.target.value;LS.set('ph-out',outCfg);if(G&&outCfg.mode==='device')route()};
 $('selMic').onchange=e=>{outCfg.mic=e.target.value;LS.set('ph-out',outCfg);if(mix.micOn){stopMic();startMic()}};
 let micStream=null,micSrc=null;
