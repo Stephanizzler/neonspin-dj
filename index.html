@@ -9,6 +9,17 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="SoundLab DJ">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta property="og:type" content="website">
+<meta property="og:title" content="SoundLab DJ">
+<meta property="og:description" content="A four-deck DJ app, free in your browser: sync, scratching, FX, a sampler and recording. No download needed.">
+<meta property="og:url" content="https://stephanizzler.github.io/neonspin-dj/">
+<meta property="og:image" content="https://stephanizzler.github.io/neonspin-dj/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SoundLab DJ">
+<meta name="twitter:description" content="A four-deck DJ app, free in your browser.">
+<meta name="twitter:image" content="https://stephanizzler.github.io/neonspin-dj/og.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/jog-favicon.png">
 <link rel="apple-touch-icon" href="icons/jog-apple-touch-icon.png">
@@ -315,6 +326,20 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 .wdemo{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;background:var(--go);color:var(--screen);border:0;border-radius:14px;padding:13px 16px;font-size:19px;font-weight:800}
 .wdemo small{font-size:13.5px;font-weight:600;opacity:.8}
 @media (prefers-reduced-motion:reduce){.tapfx.go{animation:none}}
+/* pro */
+.prosheet{z-index:62;width:520px}
+.pro-badge{font-size:14px;vertical-align:middle;background:var(--a);color:var(--screen);border-radius:6px;padding:2px 8px;letter-spacing:.1em}
+.pro-list{margin:0;padding-left:20px;font-size:15px;line-height:1.55;color:var(--ink)}
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.plan{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--well);border:1px solid var(--edge-hi);border-radius:14px;padding:14px 6px 12px;color:var(--ink);text-decoration:none;cursor:pointer}
+.plan b{font-size:24px;font-weight:800}.plan span{font-size:13px;color:var(--muted)}
+.plan.best{border-color:var(--a);box-shadow:0 0 16px -6px var(--a)}
+.plan em{position:absolute;top:-10px;font-style:normal;font-size:11px;font-weight:800;letter-spacing:.08em;background:var(--a);color:var(--screen);border-radius:999px;padding:2px 9px}
+.plan.off{opacity:.45;pointer-events:none}
+.pro-soon{color:var(--a)!important}
+.pro-key{display:flex;flex-direction:column;gap:5px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.pro-key span{display:flex;gap:6px}
+.pro-key input{flex:1;min-width:0;background:var(--well);border:1px solid var(--edge-hi);border-radius:8px;color:var(--ink);font:14px var(--f-mono);padding:7px 10px;text-transform:none;letter-spacing:0}
 /* onboarding + tips */
 .welcome{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:480px;max-height:calc(100% - 24px);overflow:auto;box-sizing:border-box;z-index:30;background:#120f2a;border:1px solid var(--edge-hi);border-radius:20px;padding:20px 22px;box-shadow:0 24px 70px rgba(0,0,0,.75);display:flex;flex-direction:column;gap:10px}
 .welcome h2{margin:0;font-size:25px;font-weight:800;text-wrap:balance}
@@ -410,6 +435,12 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
       <div class="dhead"><h2>Setup</h2><span class="tgt">Audio interface, headphone cue, microphone and MIDI controller</span><span class="sp"></span><button class="tb sm" id="setupClose">Close</button></div>
       <div class="setup-body">
         <div class="card">
+          <h3>SoundLab DJ Pro</h3>
+          <div class="avail" id="proState"></div>
+          <div class="row"><button class="tb sm" id="proOpen" style="--dc:var(--a)">See Pro</button><button class="tb sm" id="proRemove" hidden>Remove licence from this device</button></div>
+          <p>Pro adds decks C and D with the sampler, Flanger and Stutter, unlimited recording, MIDI controllers and extra output modes.</p>
+        </div>
+        <div class="card">
           <h3>Tips</h3>
           <div class="avail" id="tipsState"></div>
           <label for="selLevel">Experience<select id="selLevel"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option></select></label>
@@ -475,6 +506,19 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
         <div class="wrow"><button class="tb" id="wPlay" style="--dc:var(--go)">Play Deck A</button><button class="tb" id="wClose">Look around first</button></div>
       </div>
     </div>
+    <div class="welcome prosheet" id="proSheet" role="dialog" aria-labelledby="proT" hidden>
+      <h2 id="proT">SoundLab DJ <span class="pro-badge">PRO</span></h2>
+      <p id="proWhy">Unlock the full DJ setup.</p>
+      <ul class="pro-list"><li><b>Decks C and D</b> with the IN/OUT sampler</li><li><b>Flanger and Stutter</b> effects</li><li><b>Unlimited recording</b> (free mixes stop at 20 minutes)</li><li><b>MIDI controllers</b>, separate headphone output and 4-output interfaces</li></ul>
+      <div class="plans" id="plans">
+        <a class="plan" data-plan="monthly" target="_blank" rel="noopener"><b>$4.99</b><span>per month</span></a>
+        <a class="plan best" data-plan="yearly" target="_blank" rel="noopener"><em>Best value</em><b>$29.99</b><span>per year</span></a>
+        <a class="plan" data-plan="lifetime" target="_blank" rel="noopener"><b>$49</b><span>once, forever</span></a>
+      </div>
+      <p class="pro-soon" id="proSoon" hidden>Pro is coming soon. Everything is free to use for now.</p>
+      <label class="pro-key" for="proKey">Already bought Pro? Enter your licence key<span><input id="proKey" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false"><button class="tb sm" id="proActivate">Activate</button></span></label>
+      <div class="wrow"><button class="tb" id="proClose">Not now</button></div>
+    </div>
     <div class="tip-ring" id="tipRing" hidden></div>
     <div class="tip" id="tip" role="status" aria-live="polite" hidden>
       <div class="tip-head"><span class="tip-n" id="tipCount">Tip 1</span><button class="tip-off" id="tipOff">Turn off tips</button></div>
@@ -539,7 +583,7 @@ if(window.visualViewport)visualViewport.addEventListener('resize',layout);
 addEventListener('orientationchange',()=>setTimeout(layout,250));
 document.addEventListener('fullscreenchange',()=>setTimeout(layout,50));
 /* keep the page itself still: dragging moves the control under your finger, never the page */
-document.addEventListener('touchmove',e=>{if(!e.target.closest('.lib-main,.lib-side,.setup-body,.welcome,#cselPop'))e.preventDefault()},{passive:false});
+document.addEventListener('touchmove',e=>{if(!e.target.closest('.lib-main,.lib-side,.setup-body,.welcome,#cselPop,.prosheet'))e.preventDefault()},{passive:false});
 document.addEventListener('gesturestart',e=>e.preventDefault());
 document.addEventListener('dblclick',e=>{if(!e.target.closest('input,select'))e.preventDefault()});
 
@@ -862,8 +906,8 @@ function padDown(s,i){const d=sideDeck(s);if(!d.buf)return;if(isShift(s)){d.hot[
 function updateBend(d){const b=clamp(d.jogBend+d.btnBend+d.wheelBend,-0.5,0.5);if(Math.abs(b-d.sentBend)>2e-4||(b===0&&d.sentBend!==0)){d.sentBend=b;post({t:'bend',d:d.k,v:b})}}
 function gridShift(d,ms){if(!d.bpm)return;const bl=60/d.bpm;d.first=((d.first+ms/1000)%bl+bl)%bl;post({t:'grid',d:d.k,bpm:d.bpm,first:d.first});refreshAll()}
 function gridScale(d,f){if(!d.bpm)return;d.bpm=Math.round(d.bpm*f*100)/100;post({t:'grid',d:d.k,bpm:d.bpm,first:d.first});refreshAll()}
-function toggleFx(d){d.fx.on=!d.fx.on;if(d.fx.type==='STUTTER'){ensureAudio();if(d.fx.on)startRoll(d);else stopRoll(d)}applyFx(d.k);refreshAll()}
-function nextFx(d){if(d.roll)stopRoll(d);d.fx.type=FX_TYPES[(FX_TYPES.indexOf(d.fx.type)+1)%FX_TYPES.length];const filt=/PF$/.test(d.fx.type);d.fx.wet=filt?1:0.5;d.fx.p1=filt?0.35:0.5;if(d.fx.on&&d.fx.type==='STUTTER')startRoll(d);buildFx(d.k);refreshAll()}
+function toggleFx(d){if(!d.fx.on&&(d.fx.type==='FLANGER'||d.fx.type==='STUTTER')&&needPro(`The ${FX_NAME[d.fx.type]} effect`))return;d.fx.on=!d.fx.on;if(d.fx.type==='STUTTER'){ensureAudio();if(d.fx.on)startRoll(d);else stopRoll(d)}applyFx(d.k);refreshAll()}
+function nextFx(d){if(d.roll)stopRoll(d);do{d.fx.type=FX_TYPES[(FX_TYPES.indexOf(d.fx.type)+1)%FX_TYPES.length]}while(!isPro()&&(d.fx.type==='FLANGER'||d.fx.type==='STUTTER'));const filt=/PF$/.test(d.fx.type);d.fx.wet=filt?1:0.5;d.fx.p1=filt?0.35:0.5;if(d.fx.on&&d.fx.type==='STUTTER')startRoll(d);buildFx(d.k);refreshAll()}
 
 async function loadTrack(k,tr){
   const d=decks[k];
@@ -956,7 +1000,7 @@ function deckHTML(s){const k=s==='L'?0:1;return`<div class="deck side-${s}" id="
       <div id="xg${s}"></div></div>
   </div></div>`}
 $('deckL').outerHTML=deckHTML('L');$('deckR').outerHTML=deckHTML('R');
-function setPanel(s,p){panelOf[s]=p;refreshAll()}
+function setPanel(s,p){if(p==='xd'&&needPro(`Deck ${LET[s==='L'?2:3]} and the sampler`))return;panelOf[s]=p;refreshAll()}
 
 const ui={};
 function holdBtn(b,down,up){b.addEventListener('pointerdown',e=>{if(stage.classList.contains('learning'))return;e.preventDefault();down()});['pointerup','pointercancel','pointerleave'].forEach(t=>b.addEventListener(t,()=>up()))}
@@ -1167,6 +1211,7 @@ function refreshText(){
     $('tv'+s).textContent=(pc>=0?'+':'')+pc.toFixed(2)+'%';
     $('fL'+s).classList.toggle('on',d.sync&&d.playing&&decks[master].playing&&Math.abs(d.err)<0.01)}
   for(const s of['L','R']){const d=decks[s==='L'?2:3],b=$('xp'+s);if(b)b.style.width=(d.dur?clamp(dispPos(d)/d.dur,0,1)*100:0)+'%'}
+  if(rec&&!isPro()&&(performance.now()-rec.t0)/1000>FREE_REC_SECONDS){rec.mr.stop();openPro('Recording longer than 20 minutes')}
   if(rec)$('recTime').textContent=fmtD((performance.now()-rec.t0)/1000).padStart(5,'0')}
 function refreshAll(){
   for(const s of['L','R']){const d=sideDeck(s),k=d.k,u=ui[s],dk=$('dk'+s),q=a=>dk.querySelector(`[data-a=${a}]`),f=d.fx,P=FX_P[f.type];
@@ -1245,7 +1290,7 @@ $('devRefresh').onclick=refreshDevices;
 $('devNames').onclick=async()=>{try{const st=await navigator.mediaDevices.getUserMedia({audio:true});st.getTracks().forEach(t=>t.stop());refreshDevices()}catch(e){toast('Device names need microphone permission, which this view refused.',4000)}};
 $('selMain').onchange=async e=>{outCfg.main=e.target.value;LS.set('ph-out',outCfg);if(!ctx){toast('Saved. It applies when audio starts.');return}
   if(!ctx.setSinkId){toast('This browser cannot pick an output device');return}try{await ctx.setSinkId(outCfg.main);toast('Main output changed');route()}catch(err){toast('That output was refused: '+(err.message||err.name),5000)}};
-$('selPhMode').onchange=async e=>{outCfg.mode=e.target.value;LS.set('ph-out',outCfg);try{await ensureAudio()}catch(err){return}route();
+$('selPhMode').onchange=async e=>{if((e.target.value==='device'||e.target.value==='4ch')&&needPro('A separate headphone output')){e.target.value=outCfg.mode;syncSelects();closeSetup();return}outCfg.mode=e.target.value;LS.set('ph-out',outCfg);try{await ensureAudio()}catch(err){return}route();
   if(outCfg.mode!=='off'&&!mix.ch.some(c=>c.pfl))toast('Press CUE on a mixer channel to send it to your headphones')};
 $('phDelay').value=outCfg.delay||0;$('phDelayV').textContent=(outCfg.delay||0)+' ms';
 $('phDelay').oninput=e=>{outCfg.delay=+e.target.value;$('phDelayV').textContent=outCfg.delay+' ms';LS.set('ph-out',outCfg);if(G)G.phDelay.delayTime.setTargetAtTime(outCfg.delay/1000,ctx.currentTime,0.02)};
@@ -1271,7 +1316,7 @@ let midiAccess=null;
 const learn={on:false,target:null};
 $('jogTicks').value=midiCfg.ticks;$('jogTicksV').textContent=midiCfg.ticks;
 $('jogTicks').oninput=e=>{midiCfg.ticks=+e.target.value;$('jogTicksV').textContent=midiCfg.ticks;LS.set('ph-midicfg',midiCfg)};
-async function connectMidi(){if(midiAccess)return true;if(!navigator.requestMIDIAccess){toast('This browser has no Web MIDI. Use Chrome or Edge.',4000);return false}
+async function connectMidi(){if(midiAccess)return true;if(needPro('Using a MIDI controller')){closeSetup();return false}if(!navigator.requestMIDIAccess){toast('This browser has no Web MIDI. Use Chrome or Edge.',4000);return false}
   try{midiAccess=await navigator.requestMIDIAccess({sysex:false})}catch(e){toast('MIDI access was refused. It works on the hosted version in Chrome or Edge.',5000);return false}
   const hook=()=>{const names=[];midiAccess.inputs.forEach(i=>{i.onmidimessage=onMidi;names.push(i.name)});$('midiDevs').textContent=names.length?'Connected: '+names.join(', '):'No controllers connected. Plug one in over USB.';$('midiConnect').textContent=names.length?'MIDI on':'Connect MIDI'};
   hook();midiAccess.onstatechange=hook;toast('MIDI ready');return true}
@@ -1569,6 +1614,33 @@ $('hudPause').onclick=()=>{DEMO.paused=!DEMO.paused;$('hudPause').textContent=DE
   if(DEMO.paused){DEMO.resume=decks.filter(d=>d.playing);DEMO.resume.forEach(d=>{d.playing=false;post({t:'play',d:d.k,on:false})})}
   else{DEMO.resume.forEach(d=>{d.playing=true;post({t:'play',d:d.k,on:true})});DEMO.resume=[]}refreshAll()};
 $('demoSetup').onclick=startDemo;
+
+/* ---------- SoundLab DJ Pro ----------
+   Switched off until payments are set up: with enforce:false every feature is free and nothing is locked.
+   To go live: create the products in Lemon Squeezy, paste the three checkout links and your store ID below, set enforce:true. */
+const PRO_CFG={enforce:false,storeId:0,checkout:{monthly:'',yearly:'',lifetime:''}};
+const FREE_REC_SECONDS=20*60;
+function proLicence(){return LS.get('sl-pro',null)}
+function isPro(){return!PRO_CFG.enforce||DEMO.on||!!(proLicence()&&proLicence().valid)}
+function needPro(why){if(isPro())return false;openPro(why);return true}
+function openPro(why){$('proWhy').textContent=why?`${why} is part of SoundLab DJ Pro.`:'Unlock the full DJ setup.';
+  const live=Object.values(PRO_CFG.checkout).some(Boolean);
+  document.querySelectorAll('.plan').forEach(a=>{const url=PRO_CFG.checkout[a.dataset.plan];if(url)a.href=url;else a.removeAttribute('href');a.classList.toggle('off',!url)});
+  $('proSoon').hidden=live;$('proSheet').hidden=false}
+function closePro(){$('proSheet').hidden=true}
+function proCard(){const lic=proLicence(),on=isPro();
+  avail('proState',on,!PRO_CFG.enforce?'Everything is unlocked while Pro is being set up.':lic&&lic.valid?'Pro is active on this device. Thank you!':'You are on the free version.');
+  $('proRemove').hidden=!(lic&&lic.valid)}
+async function activatePro(){const key=$('proKey').value.trim();if(!key){toast('Enter the licence key from your purchase email');return}
+  try{const r=await fetch('https://api.lemonsqueezy.com/v1/licenses/activate',{method:'POST',headers:{'Accept':'application/json','Content-Type':'application/x-www-form-urlencoded'},
+      body:new URLSearchParams({license_key:key,instance_name:'SoundLab DJ web · '+(navigator.platform||'device')})});const j=await r.json();
+    if(!j.activated&&!(j.license_key&&j.license_key.status==='active')){toast(j.error||'That licence key was not accepted. Check it and try again.',4500);return}
+    if(PRO_CFG.storeId&&j.meta&&j.meta.store_id!==PRO_CFG.storeId){toast('That key belongs to a different product.',4000);return}
+    LS.set('sl-pro',{key,instance:j.instance&&j.instance.id,valid:true,at:Date.now()});closePro();proCard();refreshAll();toast('SoundLab DJ Pro is active. Enjoy!',3500)}
+  catch(e){toast('Could not reach the licence server. Check your connection and try again.',4500)}}
+$('proActivate').onclick=activatePro;$('proClose').onclick=closePro;$('proOpen').onclick=()=>{closeSetup();openPro()};
+$('proRemove').onclick=()=>{LS.set('sl-pro',null);proCard();toast('Licence removed from this device')};
+proCard();
 
 /* ---------- first-run onboarding ---------- */
 const pane=n=>document.querySelectorAll('.wpane').forEach(p=>p.hidden=p.dataset.pane!==n);
