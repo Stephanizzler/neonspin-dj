@@ -286,6 +286,24 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 .toast{position:absolute;left:50%;top:52px;transform:translateX(-50%);z-index:40;background:#231e48;border:1px solid var(--edge-hi);border-radius:12px;padding:9px 16px;font-size:15px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:760px;text-align:center}
 .toast.show{opacity:1}
 
+/* demo */
+#hud{position:absolute;left:0;top:0;width:1280px;height:800px;transform-origin:0 0;z-index:70;pointer-events:auto}
+.hud-top{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center;background:rgba(10,8,24,.88);border:1px solid var(--edge-hi);border-radius:999px;padding:6px 8px 6px 16px;box-shadow:0 10px 30px rgba(0,0,0,.6)}
+.hud-badge{font-weight:800;color:var(--go);letter-spacing:.16em;font-size:13px}
+.hud-prog{width:280px;height:6px;background:#2a2550;border-radius:3px;overflow:hidden}
+.hud-prog i{display:block;height:100%;width:0;background:var(--go);transition:width .4s linear}
+#hud button{background:var(--panel-2);border:1px solid var(--edge-hi);border-radius:999px;padding:8px 16px;font-size:15px;font-weight:700;color:var(--ink)}
+.hud-cap{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);width:max-content;max-width:900px;box-sizing:border-box;background:rgba(10,8,24,.92);border:1px solid var(--edge-hi);border-radius:18px;padding:14px 24px;font-size:25px;font-weight:600;line-height:1.3;text-align:center;box-shadow:0 14px 40px rgba(0,0,0,.65);text-wrap:balance;transition:opacity .25s}
+.hud-cap b{color:var(--cue)}
+.hud-cap.fade{opacity:0}
+.hud-cap.top{bottom:auto;top:66px}
+.tapfx{position:absolute;left:0;top:0;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;border:4px solid #fff;box-shadow:0 0 20px #fff;z-index:45;pointer-events:none;opacity:0}
+.tapfx.go{animation:tapfx .6s ease-out}
+@keyframes tapfx{0%{opacity:.95;transform:scale(.35)}100%{opacity:0;transform:scale(1.7)}}
+.demo-press{filter:brightness(1.35);transform:scale(.95)}
+.wdemo{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;background:var(--go);color:var(--screen);border:0;border-radius:14px;padding:13px 16px;font-size:19px;font-weight:800}
+.wdemo small{font-size:13.5px;font-weight:600;opacity:.8}
+@media (prefers-reduced-motion:reduce){.tapfx.go{animation:none}}
 /* onboarding + tips */
 .welcome{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:480px;max-height:calc(100% - 24px);overflow:auto;box-sizing:border-box;z-index:30;background:#120f2a;border:1px solid var(--edge-hi);border-radius:20px;padding:20px 22px;box-shadow:0 24px 70px rgba(0,0,0,.75);display:flex;flex-direction:column;gap:10px}
 .welcome h2{margin:0;font-size:25px;font-weight:800;text-wrap:balance}
@@ -384,7 +402,7 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
           <h3>Tips</h3>
           <div class="avail" id="tipsState"></div>
           <label for="selLevel">Experience<select id="selLevel"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option></select></label>
-          <div class="row"><button class="tb sm" id="tipsToggle">Turn tips on</button><button class="tb sm" id="tipsRestart">Start from step 1</button></div>
+          <div class="row"><button class="tb sm" id="tipsToggle">Turn tips on</button><button class="tb sm" id="tipsRestart">Start from step 1</button><button class="tb sm" id="demoSetup" style="--dc:var(--go)">▶ Watch the demo</button></div>
           <p>Tips guide you through your first mix step by step: play a track, sync the second deck, swap the bass, crossfade, scratch, set a hot cue, add an effect and record.</p>
           <p>A yellow box shows what to press next. Each step moves on once you've done it, or press Skip.</p>
         </div>
@@ -421,6 +439,7 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
     <div class="welcome" id="welcome" role="dialog" aria-labelledby="wTitle" hidden>
       <div class="wpane" data-pane="level">
         <h2 id="wTitle">Welcome to NeonSpin DJ</h2>
+        <button class="wdemo" id="wDemo">▶ Watch the 1-minute demo<small>See every feature at work in a real mix, with sound</small></button>
         <p>Two demo house tracks are already loaded, so you can start mixing straight away. How much DJing have you done?</p>
         <div class="wchoice">
           <button class="wbig" id="wBeg"><b>I'm a beginner</b><small>New to DJing, or still learning the basics</small></button>
@@ -452,7 +471,12 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
     <div class="homecard" id="homeTip" role="dialog" aria-labelledby="htT" hidden><b id="htT">Keep your music safe</b>
       <p>On iPhone, Safari can clear a website's saved songs and playlists if you don't open it for about a week. Add NeonSpin DJ to your Home Screen to keep them: tap <b>Share</b> (the square with the arrow), then <b>Add to Home Screen</b>.</p>
       <button class="tb" id="homeTipOk">Got it</button></div>
+    <div class="tapfx" id="tapfx"></div>
     <div class="toast" id="toast"></div>
+  </div>
+  <div id="hud" hidden>
+    <div class="hud-top"><span class="hud-badge">DEMO</span><div class="hud-prog"><i id="hudProg"></i></div><button id="hudPause">Pause</button><button id="hudSkip">Skip demo</button></div>
+    <div class="hud-cap" id="hudCap" aria-live="polite"></div>
   </div>
 </div>
 
@@ -471,25 +495,28 @@ const fmtT=t=>{t=Math.max(0,t);const m=Math.floor(t/60),s=t-m*60;return m+':'+(s
 const fmtD=t=>{t=Math.max(0,Math.round(t));return Math.floor(t/60)+':'+String(t%60).padStart(2,'0')};
 const fmtBeats=b=>b>=1?String(b):b===0.5?'½':b===0.25?'¼':b===0.375?'⅜':b===0.75?'¾':b===0.125?'⅛':String(b);
 function toast(msg,ms=2600){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('show'),ms)}
-function fit(c){const dpr=Math.min(2,window.devicePixelRatio||1)*stageScale;const w=Math.max(1,Math.round(c.clientWidth*dpr)),h=Math.max(1,Math.round(c.clientHeight*dpr));if(c.width!==w||c.height!==h){c.width=w;c.height=h}return[w,h]}
+function fit(c){const dpr=Math.min(2,window.devicePixelRatio||1)*stageScale*CAM.z;const w=Math.max(1,Math.round(c.clientWidth*dpr)),h=Math.max(1,Math.round(c.clientHeight*dpr));if(c.width!==w||c.height!==h){c.width=w;c.height=h}return[w,h]}
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 
 /* ---------- stage scaling ---------- */
 let stageScale=1;
-let SH=800;const TF={rot:false,s:1,ox:0,oy:0};
+let SH=800;const TF={rot:false,s:1,ox:0,oy:0};let CAM={z:1,tx:0,ty:0},BASE='scale(1)';
 function layout(){const f=$('fit');if(!f)return;const fr=f.getBoundingClientRect(),W=fr.width,H=fr.height;if(!W||!H)return;
   const rot=H>W*1.05; /* phone held upright: draw the console sideways so it always shows in landscape */
   const LW=rot?H:W,LH=rot?W:H;
   SH=Math.round(clamp(1280*LH/LW,480,1000));
   const s=Math.min(LW/1280,LH/SH);stageScale=s;const st=$('stage');st.style.height=SH+'px';
   let left,top;
-  if(rot){left=(W-SH*s)/2+SH*s;top=(H-1280*s)/2;st.style.transform=`rotate(90deg) scale(${s})`}
-  else{left=(W-1280*s)/2;top=(H-SH*s)/2;st.style.transform=`scale(${s})`}
-  st.style.left=left+'px';st.style.top=top+'px';
+  if(rot){left=(W-SH*s)/2+SH*s;top=(H-1280*s)/2;BASE=`rotate(90deg) scale(${s})`}
+  else{left=(W-1280*s)/2;top=(H-SH*s)/2;BASE=`scale(${s})`}
+  st.style.left=left+'px';st.style.top=top+'px';applyCam();
+  const hud=$('hud');if(hud){hud.style.left=left+'px';hud.style.top=top+'px';hud.style.height=SH+'px';hud.style.transform=BASE}
   Object.assign(TF,{rot,s,ox:fr.left+left,oy:fr.top+top});
   st.classList.toggle('short',SH<600);sizeJogs();try{placeTip()}catch(e){}}
 /* screen point -> console coordinates (handles the sideways view) */
-function localPt(cx,cy){const{rot,s,ox,oy}=TF;return rot?{x:(cy-oy)/s,y:(ox-cx)/s}:{x:(cx-ox)/s,y:(cy-oy)/s}}
+function localPt(cx,cy){const{rot,s,ox,oy}=TF;const q=rot?{x:(cy-oy)/s,y:(ox-cx)/s}:{x:(cx-ox)/s,y:(cy-oy)/s};return{x:(q.x-CAM.tx)/CAM.z,y:(q.y-CAM.ty)/CAM.z}}
+/* demo camera: zoom the console in on a point; the overlay (#hud) keeps the base transform */
+function applyCam(){const st=$('stage');if(!st)return;const c=CAM;st.style.transform=BASE+(c.z!==1||c.tx||c.ty?` translate(${c.tx}px,${c.ty}px) scale(${c.z})`:'')}
 function elRect(el){const r=el.getBoundingClientRect(),a=localPt(r.left,r.top),b=localPt(r.right,r.bottom);return{left:Math.min(a.x,b.x),top:Math.min(a.y,b.y),width:Math.abs(a.x-b.x),height:Math.abs(a.y-b.y)}}
 function sizeJogs(){for(const s of['L','R']){const c=$('jog'+s);if(!c)continue;const box=c.parentElement;c.style.width=c.style.height='0px';
   const sz=Math.floor(Math.max(80,Math.min(box.clientWidth,box.clientHeight)));c.style.width=c.style.height=sz+'px'}}
@@ -1390,10 +1417,80 @@ addEventListener('pointerdown',e=>{if(fsTried||e.pointerType!=='touch'||standalo
   const el=document.documentElement;if(!el.requestFullscreen||document.fullscreenElement)return;
   el.requestFullscreen({navigationUI:'hide'}).then(()=>{try{screen.orientation.lock('landscape').catch(()=>{})}catch(err){}}).catch(()=>{})},true);
 
+/* ---------- live demo: the app plays a real mix and zooms in on each feature ---------- */
+const DEMO={on:false,paused:false,abort:false,resume:[]};
+const ABORT={};
+async function dwait(ms){let left=ms,last=performance.now();while(left>0){if(DEMO.abort)throw ABORT;await new Promise(r=>setTimeout(r,40));const now=performance.now();if(!DEMO.paused)left-=now-last;last=now}}
+function tween(fn,from,to,ms){return new Promise((res,rej)=>{const t0=performance.now();const step=()=>{if(DEMO.abort)return rej(ABORT);const k=Math.min(1,(performance.now()-t0)/ms),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;fn(from+(to-from)*e);if(k<1)requestAnimationFrame(step);else res()};step()})}
+const D$=sel=>typeof sel==='string'?document.querySelector(sel):sel;
+function focus(sels,zmax=2.0){if(!sels){CAM={z:1,tx:0,ty:0};applyCam();$('hudCap').classList.remove('top');return}
+  const rs=[].concat(sels).map(D$).filter(Boolean).map(elRect);if(!rs.length)return;
+  const x0=Math.min(...rs.map(r=>r.left)),y0=Math.min(...rs.map(r=>r.top)),x1=Math.max(...rs.map(r=>r.left+r.width)),y1=Math.max(...rs.map(r=>r.top+r.height));
+  const z=clamp(Math.min(1280*0.8/(x1-x0),SH*0.62/(y1-y0),zmax),1,zmax),cx=(x0+x1)/2,cy=(y0+y1)/2+SH*0.06;
+  CAM={z,tx:clamp(640-z*cx,1280*(1-z),0),ty:clamp(SH/2-z*cy,SH*(1-z),0)};applyCam();
+  /* keep the caption off the controls being shown */
+  const sy=z*(y0+y1)/2+CAM.ty;$('hudCap').classList.toggle('top',sy>SH*0.56)}
+function cap(html){const c=$('hudCap');c.classList.add('fade');setTimeout(()=>{c.innerHTML=html;c.classList.remove('fade')},220)}
+function press(sel){const el=D$(sel);if(!el)return;const r=elRect(el);const t=$('tapfx');t.style.left=r.left+r.width/2+'px';t.style.top=r.top+r.height/2+'px';
+  t.classList.remove('go');void t.offsetWidth;t.classList.add('go');el.classList.add('demo-press');setTimeout(()=>el.classList.remove('demo-press'),380)}
+async function scene(n,total,sels,html,body){$('hudProg').style.width=Math.round(n/total*100)+'%';if(sels!==undefined)focus(sels);if(html)cap(html);await dwait(900);await body()}
+async function demoScratch(d){d.touching=true;post({t:'flux',d:d.k,on:true});post({t:'touch',d:d.k,on:true});
+  for(const amt of[-0.22,0.22,-0.22,0.22,-0.12,0.12,-0.12,0.12,-0.22,0.22]){const n=8;for(let i=0;i<n;i++){post({t:'scratch',d:d.k,delta:amt/n});await dwait(26)}}
+  d.touching=false;post({t:'touch',d:d.k,on:false});setTimeout(()=>post({t:'flux',d:d.k,on:d.flux}),60)}
+async function demoPrepare(){
+  for(const d of decks){if(d.playing){d.playing=false;post({t:'play',d:d.k,on:false})}if(d.roll)stopRoll(d);d.loop=null;d.loopIn=null;postLoop(d);d.fx.on=false;applyFx(d.k);
+    d.rev=false;post({t:'dir',d:d.k,v:1});d.flux=false;post({t:'flux',d:d.k,on:false});d.keylock=false;post({t:'kl',d:d.k,on:false});d.btnBend=d.wheelBend=0;updateBend(d)}
+  for(const k of[0,1])if(decks[k].name!==DEMOS[k].name){const t=lib.tracks.find(x=>x.demo===k);if(t)await loadTrack(k,t)}
+  await Promise.all([bootP[0],bootP[1]]);
+  const B=decks[1];if(B.sync){B.sync=false;post({t:'sync',d:1,on:false})}
+  for(const d of decks.slice(0,2)){d.fader=0;d.range=0.08;setTempo(d);d.hot=[null,null,null,null];d.lsize=4;seek(d,d.cue||d.first||0)}
+  if(decks[3].buf)seek(decks[3],decks[3].first||0);
+  setMaster(0);for(const s of['L','R']){for(const k in ui[s].kn)ui[s].kn[k].set(0);ui[s].cf.set(0.8)}
+  ui.R.xg.set(0);xfader.set(-1);mix.curve='blend';applyXf();panelOf.L=panelOf.R='cues';refreshAll()}
+async function runDemo(){
+  const A=decks[0],B=decks[1],Dd=decks[3],T=17;let n=0;
+  await scene(n++,T,null,'Welcome to <b>NeonSpin DJ</b>. Here\'s a real mix, one feature at a time.',()=>dwait(2600));
+  await scene(n++,T,['#dkL .tcol','#jogL'],'<b>PLAY</b> starts Deck A. The platter spins, and its outer ring shows how far through the track you are.',async()=>{press('#dkL [data-a=play]');togglePlay(A);await dwait(3800)});
+  await scene(n++,T,'#strips','The waveforms show the beats coming up. The <b>Beats</b> bar compares Deck A and Deck B.',()=>dwait(3800));
+  await scene(n++,T,['#dkR .tcol','#dkR .tempo'],'<b>SYNC</b> matches Deck B to Deck A\'s tempo: 126 becomes 124 BPM.',async()=>{press('#dkR [data-a=sync]');toggleSync(B);await dwait(3400)});
+  await scene(n++,T,['#dkR .tcol','#strips'],'<b>PLAY</b> on Deck B starts it right on the beat. The Beats bar turns green: locked. The crossfader keeps it silent for now.',async()=>{press('#dkR [data-a=play]');togglePlay(B);await dwait(4600)});
+  await scene(n++,T,'#mxR','Turn Deck B\'s <b>LOW</b> knob down, so two basslines won\'t clash.',async()=>{press('[data-mid="R:kn:lo"]');await tween(v=>ui.R.kn.lo.set(v),0,-1,1500);await dwait(1200)});
+  await scene(n++,T,'.mx-xf','Slide the <b>crossfader</b> to bring Deck B into the mix.',async()=>{await tween(v=>xfader.set(v),-1,0,3200);await dwait(800)});
+  await scene(n++,T,['#mxL','#mxR'],'Swap the bass: Deck A\'s <b>LOW</b> goes down while Deck B\'s comes back up.',async()=>{press('[data-mid="L:kn:lo"]');await Promise.all([tween(v=>ui.L.kn.lo.set(v),0,-1,2600),tween(v=>ui.R.kn.lo.set(v),-1,0,2600)]);await dwait(800)});
+  await scene(n++,T,'.mx-xf','Finish the mix: crossfader across, and Deck B plays on its own.',async()=>{await tween(v=>xfader.set(v),0,1,2400);press('#dkL [data-a=play]');togglePlay(A);ui.L.kn.lo.set(0);await dwait(800)});
+  await scene(n++,T,['#dkR .jogbox'],'<b>Scratch</b>: hold the middle of the platter and rock it back and forth.',async()=>{press('#jogR');await demoScratch(B);await dwait(900)});
+  await scene(n++,T,['#dkR .ptabs','#dkR .panel'],'<b>Hot cues</b> save a moment. Tap the pad again to jump straight back to it.',async()=>{setPanel('R','cues');await dwait(400);press('#dkR [data-hot="0"]');padDown('R',0);await dwait(2200);press('#dkR [data-hot="0"]');padDown('R',0);await dwait(1600)});
+  await scene(n++,T,['#dkR .ptabs','#dkR .panel'],'<b>LOOP</b> repeats 4 beats in time. Halve it for a build-up.',async()=>{setPanel('R','loop');await dwait(400);press('#dkR [data-a=lauto]');autoLoop(B);await dwait(2400);
+    for(let i=0;i<2;i++){press('#dkR [data-a=lhalf]');loopSize(B,0.5);await dwait(1300)}press('#dkR [data-a=lauto]');autoLoop(B);B.lsize=4;refreshAll();await dwait(700)});
+  await scene(n++,T,['#dkR .ptabs','#dkR .panel'],'<b>FX</b>: the <b>Flanger</b> sweeps a jet-plane whoosh across the beat.',async()=>{setPanel('R','fx');while(B.fx.type!=='FLANGER')nextFx(B);await dwait(400);press('#dkR [data-a=fxon]');toggleFx(B);await tween(v=>ui.R.fx.wet.set(v),0.3,0.8,1500);await dwait(2000);toggleFx(B)});
+  await scene(n++,T,undefined,'<b>Stutter</b> repeats a tiny slice of the beat, then drops back in perfect time.',async()=>{press('#dkR [data-a=fxtype]');while(B.fx.type!=='STUTTER')nextFx(B);await dwait(500);
+    for(let i=0;i<2;i++){press('#dkR [data-a=fxon]');toggleFx(B);await dwait(1100);toggleFx(B);await dwait(700)}});
+  await scene(n++,T,undefined,'The <b>High-pass</b> and <b>Low-pass</b> filters sweep the sound away and bring it back.',async()=>{press('#dkR [data-a=fxtype]');while(B.fx.type!=='HPF')nextFx(B);await dwait(400);press('#dkR [data-a=fxon]');toggleFx(B);
+    await tween(v=>ui.R.fx.p1.set(v),0.05,0.85,2000);await tween(v=>ui.R.fx.p1.set(v),0.85,0.05,1600);toggleFx(B);await dwait(400)});
+  if(Dd.buf)await scene(n++,T,['#dkR .ptabs','#dkR .panel'],'<b>Deck D</b> layers an extra track, synced automatically, with its own gain and FX.',async()=>{setPanel('R','xd');await dwait(400);press('#dkR [data-x=play]');if(!Dd.sync)toggleSync(Dd);togglePlay(Dd);
+    await tween(v=>ui.R.xg.set(v),0,0.75,1800);await dwait(2600);await tween(v=>ui.R.xg.set(v),0.75,0,1400);togglePlay(Dd)});else n++;
+  await scene(n++,T,['#recBtn','#libBtn'],'<b>REC</b> records your mix. <b>Library</b> is where you add your own music and playlists.',async()=>{press('#recBtn');await dwait(1600);press('#libBtn');await dwait(1800)});
+  await scene(T,T,null,'Your turn! Press <b>PLAY</b> and start mixing.',()=>dwait(2600));
+}
+async function startDemo(){if(DEMO.on)return;ensureAudio().catch(()=>{});closeLib();closeSetup();$('welcome').hidden=true;
+  DEMO.on=true;DEMO.abort=false;DEMO.paused=false;$('hudPause').textContent='Pause';$('hudProg').style.width='0';$('hudCap').innerHTML='Getting the decks ready…';
+  $('hud').hidden=false;layout();placeTip();const st=$('stage');
+  try{await ensureAudio();await demoPrepare();st.style.transition='transform .9s cubic-bezier(.45,0,.2,1)';await runDemo()}
+  catch(e){if(e!==ABORT)console.error(e)}
+  finally{DEMO.on=false;DEMO.paused=false;st.style.transition='transform .6s ease';focus(null);setTimeout(()=>{st.style.transition=''},700);
+    $('hud').hidden=true;try{await demoPrepare();xfader.set(0)}catch(e){}refreshAll();renderTip();
+    if(!LS.get('ns-onboarded',false)){pane('level');$('welcome').hidden=false}}}
+$('hudSkip').onclick=()=>{DEMO.abort=true;DEMO.paused=false};
+$('hudPause').onclick=()=>{DEMO.paused=!DEMO.paused;$('hudPause').textContent=DEMO.paused?'Resume':'Pause';
+  if(DEMO.paused){DEMO.resume=decks.filter(d=>d.playing);DEMO.resume.forEach(d=>{d.playing=false;post({t:'play',d:d.k,on:false})})}
+  else{DEMO.resume.forEach(d=>{d.playing=true;post({t:'play',d:d.k,on:true})});DEMO.resume=[]}refreshAll()};
+$('demoSetup').onclick=startDemo;
+
 /* ---------- first-run onboarding ---------- */
 const pane=n=>document.querySelectorAll('.wpane').forEach(p=>p.hidden=p.dataset.pane!==n);
 const finishOnboard=()=>{$('welcome').hidden=true;LS.set('ns-onboarded',true);setTimeout(renderTip,0)};
 if(!LS.get('ns-onboarded',false)){pane('level');$('welcome').hidden=false}
+$('wDemo').onclick=startDemo;
 $('wBeg').onclick=()=>{setLevel('beginner');pane('tips')};
 $('wInt').onclick=()=>{setLevel('intermediate');pane('demo')};
 $('wTipsOn').onclick=()=>{finishOnboard();setTips(true,0)};
@@ -1431,7 +1528,7 @@ function renderTip(){const tip=$('tip'),ring=$('tipRing');
   const st=TIPS[tipState.step];if(st.tab&&panelOf.R!==st.tab){panelOf.R=st.tab;refreshAll()}$('tipCount').textContent=`Tip ${tipState.step+1} of ${TIPS.length}`;$('tipText').innerHTML=st.txt();
   $('tipNext').textContent=st.last?'Finish':'Skip';$('tipBack').disabled=tipState.step===0;$('tipBack').style.visibility=tipState.step===0?'hidden':'visible';$('tipDone').hidden=true;
   tipShownAt=performance.now();placeTip()}
-function placeTip(){const tip=$('tip'),ring=$('tipRing');if(!tipState.on||tipState.step>=TIPS.length||!$('welcome').hidden)return;
+function placeTip(){const tip=$('tip'),ring=$('tipRing');if(DEMO.on){tip.hidden=ring.hidden=true;return}if(!tipState.on||tipState.step>=TIPS.length||!$('welcome').hidden)return;
   const el=TIPS[tipState.step].t();const drawer=$('lib').classList.contains('open')||$('setup').classList.contains('open')||learn.on;
   if(!el||drawer){tip.hidden=ring.hidden=true;return}
   tip.hidden=ring.hidden=false;
