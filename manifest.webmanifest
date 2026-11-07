@@ -1,6 +1,6 @@
 {
-  "name": "NeonSpin DJ",
-  "short_name": "NeonSpin DJ",
+  "name": "SoundLab DJ",
+  "short_name": "SoundLab DJ",
   "description": "Four-deck DJ app with scratchable jog wheels, auto beatmatching, FX, headphone cue, MIDI and mix recording.",
   "id": "./",
   "start_url": "./",
