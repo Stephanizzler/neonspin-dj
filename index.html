@@ -870,9 +870,10 @@ async function loadTrack(k,tr){
     else{await ensureAudio();toast('Loading '+tr.name+'…',9000);const ad=await ctx.decodeAudioData(await tr.blob.arrayBuffer());buf={L:ad.getChannelData(0),R:ad.numberOfChannels>1?ad.getChannelData(1):ad.getChannelData(0),sr:ad.sampleRate}}
     if(d.playing){d.playing=false;post({t:'play',d:k,on:false})}
     const an=analyze(buf);
+    if(!d.sync){d.fader=0}   /* a new song starts at its own tempo */
     Object.assign(d,{buf,name:tr.name,artist:tr.artist||'',peaks:computePeaks(buf),bpm:an.bpm,first:an.first,dur:buf.L.length/buf.sr,pos:0,v:0,recv:0,cue:an.first,hot:[null,null,null,null],loop:null,loopIn:null});
     if(d.sync&&!d.bpm){d.sync=false;post({t:'sync',d:k,on:false})}
-    sendLoad(d);if(an.first>0.001)seek(d,an.first);
+    setTempo(d);sendLoad(d);if(an.first>0.001)seek(d,an.first);
     if(tr.id&&(!tr.bpm||tr.bpm!==an.bpm)){tr.bpm=an.bpm;tr.dur=d.dur;saveTrack(tr);renderLib()}
     toast(`${tr.name} → Deck ${d.letter}`);
     refreshAll();
@@ -1093,7 +1094,7 @@ function drawStrip(s){if($('strips').hidden)return;
   g.fillStyle=col;g.font=`700 ${Math.round(14*px)}px Outfit,sans-serif`;g.textBaseline='top';g.fillText(d.letter,6*px,3*px);
   [d.cue,...d.hot].forEach((t,i)=>{if(t==null)return;const x=w/2+(t-pos)/secPerPx;if(x<0||x>w)return;g.fillStyle=i===0?'#ffb020':HOTC[i-1];g.beginPath();g.moveTo(x-4*px,h);g.lineTo(x+4*px,h);g.lineTo(x,h-6*px);g.fill()});
   g.fillStyle='#ff3b3b';g.fillRect(Math.round(w/2)-px/2,0,Math.max(1,px),h);
-  if(stage.classList.contains('short')){const fs=Math.round(13*px),t=`${d.name}   ${d.bpm?(d.bpm*r).toFixed(1)+' BPM':''}   -${fmtT(d.dur-pos).slice(0,-2)}`;
+  if(stage.classList.contains('short')){const fs=Math.round(13*px),t=`${d.name}   ${d.bpm?(d.bpm*r).toFixed(1)+' BPM'+(Math.abs(r-1)>0.0005?` (track ${d.bpm.toFixed(1)})`:''):''}   -${fmtT(d.dur-pos).slice(0,-2)}`;
     g.font=`700 ${fs}px Outfit,sans-serif`;g.textBaseline='middle';const tw=g.measureText(t).width;g.fillStyle='rgba(7,6,26,.82)';g.fillRect(22*px,mid-fs*0.75,tw+16*px,fs*1.5);
     g.fillStyle='#f2f0ff';g.fillText(t,30*px,mid);g.textBaseline='top'}
 }
@@ -1158,7 +1159,7 @@ function refreshX(s){const xk=s==='L'?2:3,d=decks[xk],u=ui[s],pane=$('dk'+s).que
 function refreshText(){
   for(const s of['L','R']){const d=sideDeck(s),p=dispPos(d),r=ratio(d);
     $('el'+s).textContent=fmtT(p);$('rm'+s).textContent='-'+fmtT(d.dur-p);
-    $('bpm'+s).textContent=d.bpm?(d.bpm*r).toFixed(2):'—';const pc=(r-1)*100;$('pitch'+s).textContent=(pc>=0?'+':'')+pc.toFixed(2)+'%';
+    $('bpm'+s).textContent=d.bpm?(d.bpm*r).toFixed(2):'—';const pc=(r-1)*100;$('pitch'+s).textContent=(pc>=0?'+':'')+pc.toFixed(2)+'%'+(d.bpm?` · track ${d.bpm.toFixed(1)}`:'');
     $('tv'+s).textContent=(pc>=0?'+':'')+pc.toFixed(2)+'%';
     $('fL'+s).classList.toggle('on',d.sync&&d.playing&&decks[master].playing&&Math.abs(d.err)<0.01)}
   for(const s of['L','R']){const d=decks[s==='L'?2:3],b=$('xp'+s);if(b)b.style.width=(d.dur?clamp(dispPos(d)/d.dur,0,1)*100:0)+'%'}
