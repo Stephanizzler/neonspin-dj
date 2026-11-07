@@ -7,7 +7,11 @@
 <meta name="description" content="NeonSpin DJ: a four-deck DJ app with scratchable jog wheels, auto beatmatching, FX, headphone cue, MIDI and mix recording.">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="NeonSpin DJ">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>NeonSpin DJ</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -281,6 +285,7 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
       <div class="brand"><i></i>NeonSpin DJ</div>
       <span class="clock" id="clock">--:--</span>
       <div class="status" id="status">Audio is asleep. Press <b>PLAY</b> or touch a platter to start.</div>
+      <button class="tb" id="installBtn" style="--dc:var(--go)" hidden>Install app</button>
       <button class="tb" id="libBtn">Library</button>
       <button class="tb" id="setupBtn">Setup</button>
       <button class="tb" id="learnBtn">MIDI Learn</button>
@@ -958,16 +963,19 @@ function drawJog(s){
   g.save();g.shadowColor=col;g.shadowBlur=R*(d.playing?0.16:0.07);g.strokeStyle=col;g.globalAlpha=on?1:0.25;g.lineWidth=R*0.045;arc(R*0.88);g.stroke();g.restore();
   g.save();g.rotate(ang);g.lineCap='round';g.lineWidth=R*0.02;g.strokeStyle='#ffffff';g.globalAlpha=on?0.85:0.2;
   for(let i=0;i<3;i++){const a=i*Math.PI*2/3;arc(R*0.88,a,a+0.42);g.stroke()}
-  g.globalAlpha=on?0.35:0.1;g.lineWidth=R*0.008;for(let i=0;i<48;i++){const a=i*Math.PI/24;g.beginPath();g.moveTo(Math.cos(a)*R*0.935,Math.sin(a)*R*0.935);g.lineTo(Math.cos(a)*R*0.955,Math.sin(a)*R*0.955);g.stroke()}
+  g.lineWidth=0;for(let i=0;i<24;i++){const a=i*Math.PI/12,big=i%2===0;g.globalAlpha=on?(big?0.95:0.45):0.12;g.fillStyle=big?col:'#ffffff';g.beginPath();g.arc(Math.cos(a)*R*0.945,Math.sin(a)*R*0.945,R*(big?0.018:0.011),0,Math.PI*2);g.fill()}
   g.restore();g.globalAlpha=1;
   if(d.bpm&&on){const bt=(pos-d.first)*d.bpm/60,bi=((Math.floor(bt)%4)+4)%4;g.lineWidth=R*0.03;
     for(let i=0;i<4;i++){const a0=-Math.PI/2+i*Math.PI/2+0.06,a1=a0+Math.PI/2-0.12;g.strokeStyle=i===bi?(i===0?'#ffffff':col):'#22262e';arc(R*0.815,a0,a1);g.stroke()}}
   gr=g.createRadialGradient(-R*0.2,-R*0.25,R*0.05,0,0,R*0.78);gr.addColorStop(0,'#1c1f26');gr.addColorStop(1,'#08090b');g.fillStyle=gr;arc(R*0.78);g.fill();
   g.strokeStyle='#ffffff';g.globalAlpha=0.05;g.lineWidth=1;for(let r=0.42;r<0.77;r+=0.025){arc(R*r);g.stroke()}g.globalAlpha=1;
-  g.save();g.rotate(ang);g.globalAlpha=0.07;g.fillStyle='#ffffff';g.beginPath();g.moveTo(0,0);g.arc(0,0,R*0.77,-0.25,0.25);g.closePath();g.fill();g.beginPath();g.moveTo(0,0);g.arc(0,0,R*0.77,Math.PI-0.25,Math.PI+0.25);g.closePath();g.fill();g.restore();
+  g.save();g.rotate(ang);g.globalAlpha=0.13;g.fillStyle='#ffffff';g.beginPath();g.moveTo(0,0);g.arc(0,0,R*0.77,-0.25,0.25);g.closePath();g.fill();g.beginPath();g.moveTo(0,0);g.arc(0,0,R*0.77,Math.PI-0.25,Math.PI+0.25);g.closePath();g.fill();g.restore();
   g.save();g.rotate(ang);gr=g.createRadialGradient(0,0,0,0,0,R*0.34);gr.addColorStop(0,col);gr.addColorStop(1,'#0b0c0f');g.fillStyle=gr;g.globalAlpha=on?0.9:0.3;arc(R*0.34);g.fill();
   g.globalAlpha=on?1:0.4;g.fillStyle='#0b0c0f';for(let i=0;i<3;i++){const a=i*Math.PI*2/3;g.beginPath();g.moveTo(0,0);g.arc(0,0,R*0.3,a,a+0.5);g.closePath();g.fill()}
-  g.strokeStyle='#ffffff';g.lineWidth=R*0.018;g.lineCap='round';g.beginPath();g.moveTo(R*0.36,0);g.lineTo(R*0.76,0);g.stroke();g.restore();g.globalAlpha=1;
+  g.strokeStyle='#ffffff';g.lineWidth=R*0.018;g.lineCap='round';
+  const spd=Math.abs(d.v)>0.02?d.v:0;if(spd){const dir=Math.sign(spd),n=6,span=Math.min(0.9,Math.abs(spd)*0.32);for(let i=n;i>=1;i--){const a=-dir*span*i/n;g.globalAlpha=0.5*(1-i/(n+1));g.beginPath();g.moveTo(Math.cos(a)*R*0.36,Math.sin(a)*R*0.36);g.lineTo(Math.cos(a)*R*0.76,Math.sin(a)*R*0.76);g.stroke()}g.globalAlpha=1}
+  g.beginPath();g.moveTo(R*0.36,0);g.lineTo(R*0.76,0);g.stroke();
+  g.fillStyle='#ffffff';g.beginPath();g.arc(R*0.22,0,R*0.035,0,Math.PI*2);g.fill();g.restore();g.globalAlpha=1;
   g.fillStyle='#0b0c0f';arc(R*0.13);g.fill();g.fillStyle=col;g.font=`700 ${Math.round(R*0.16)}px "Barlow Condensed",sans-serif`;g.textAlign='center';g.textBaseline='middle';g.fillText(d.letter,0,R*0.01);
   if(d.touching||d.jogActive||d.tempTouch){g.strokeStyle='#ffffff';g.globalAlpha=0.7;g.lineWidth=R*0.012;arc(d.jogActive?R*0.9:R*0.775);g.stroke();g.globalAlpha=1}
   if(d.rev||d.flux){g.fillStyle=d.rev?'#ff3b3b':'#8c93a0';g.font=`700 ${Math.round(R*0.075)}px "Barlow Condensed",sans-serif`;g.fillText(d.rev?'REVERSE':'SLIP',0,-R*0.55)}
@@ -1268,6 +1276,15 @@ function bootDeck(k,i){const d=decks[k];d.loading=true;d.name='Loading demo…';
     Object.assign(d,{buf,loading:false,name:DEMOS[i].name,artist:'Demo · '+DEMOS[i].genre,peaks:computePeaks(buf),bpm:an.bpm,first:an.first,dur:buf.L.length/buf.sr,pos:an.first,cue:an.first});
     if(node)sendLoad(d);refreshAll()})}
 layout();bootDeck(0,0);bootDeck(1,1);Promise.all([bootP[0],bootP[1]]).then(()=>{bootDeck(2,2);bootDeck(3,3)});refreshAll();renderLib();updateAvail();requestAnimationFrame(frame);
+/* ---------- installable app (hosted version only: it ships a manifest and service worker) ---------- */
+let installEvt=null;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;$('installBtn').hidden=false;$('installBtn').classList.add('on')});
+$('installBtn').onclick=async()=>{if(!installEvt)return;installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;$('installBtn').hidden=true};
+addEventListener('appinstalled',()=>{$('installBtn').hidden=true;toast('NeonSpin DJ is installed. Open it from your home screen.',4000)});
+if(document.querySelector('link[rel=manifest]')&&'serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+const standalone=matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches||navigator.standalone;
+if(standalone){$('fsBtn').hidden=true;try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{})}catch(e){}}
+
 /* ---------- first-run onboarding ---------- */
 const pane=n=>document.querySelectorAll('.wpane').forEach(p=>p.hidden=p.dataset.pane!==n);
 const finishOnboard=()=>{$('welcome').hidden=true;LS.set('ns-onboarded',true);setTimeout(renderTip,0)};

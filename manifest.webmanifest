@@ -1,0 +1,19 @@
+{
+  "name": "NeonSpin DJ",
+  "short_name": "NeonSpin DJ",
+  "description": "Four-deck DJ app with scratchable jog wheels, auto beatmatching, FX, headphone cue, MIDI and mix recording.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#07080b",
+  "theme_color": "#07080b",
+  "categories": ["music", "entertainment"],
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
