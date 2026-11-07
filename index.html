@@ -25,7 +25,7 @@
   color-scheme: dark;
   --bg:#0a0818; --panel:#16132c; --panel-2:#1d1938; --well:#0e0c20; --edge:#2a2550; --edge-hi:#3d3672;
   --ink:#f2f0ff; --muted:#a29dcc; --dim:#625d8f;
-  --a:#ff9f43; --b:#a46bff;
+  --a:#ff9f43; --b:#a46bff; --c:#35d0ff; --d:#ff6f9f;
   --go:#2fe39a; --cue:#ffd23f; --rec:#ff4d5e; --pfl:#ffd23f;
   --screen:#07061a;
   --f-ui:"Outfit","Avenir Next","Segoe UI",system-ui,sans-serif;
@@ -138,7 +138,7 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 .bendrow button{flex:1;background:var(--well);border:1px solid var(--edge-hi);border-radius:8px;font-size:17px;font-weight:700;padding:0;line-height:24px;color:var(--muted)}
 
 /* tabbed performance panel */
-.ptabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--well);border-radius:10px;padding:3px}
+.ptabs{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;background:var(--well);border-radius:10px;padding:3px}
 .ptabs button{background:transparent;border:0;border-radius:8px;font-size:16px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .ptabs button.on{background:var(--edge-hi);color:var(--ink)}
 .ptabs button .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--go);margin-left:5px;vertical-align:middle}
@@ -159,6 +159,17 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 .fxk{display:flex;gap:10px;align-items:center;padding:0 2px}
 .fxv{flex:1;align-self:center;font-family:var(--f-mono);font-size:11px;color:var(--muted);text-align:center;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fxon{flex:0 0 74px}
+.xdeck{align-items:stretch}
+.xplay{flex:0 0 58px;border-radius:12px;border:1.5px solid color-mix(in srgb,var(--go) 60%,transparent);background:var(--well);color:var(--go);font-size:20px;font-weight:800;touch-action:none}
+.xplay.on{background:var(--go);color:var(--screen)}
+.xinfo{flex:1;min-width:0;border-radius:12px;border:1px solid var(--edge-hi);background:var(--screen);display:flex;flex-direction:column;justify-content:center;gap:4px;padding:0 10px;text-align:left}
+.xinfo b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--xc)}
+.xbar{display:block;height:4px;background:#221d44;border-radius:2px;overflow:hidden}.xbar i{display:block;height:100%;width:0;background:var(--xc)}
+.xinfo small{font-family:var(--f-mono);font-size:10.5px;color:var(--muted);white-space:nowrap}
+.xsync{flex:0 0 56px;border-radius:12px;border:1.5px solid color-mix(in srgb,var(--xc) 55%,transparent);background:var(--well);font-weight:800;font-size:12px;color:var(--xc)}
+.xsync.on{background:var(--xc);color:var(--screen)}
+.xfxt{flex:0 0 78px}.xfxt b{color:var(--xc);font-size:14px}
+.xdeck .knob-wrap{justify-content:center}
 .dropping{outline:2px dashed var(--dc);outline-offset:-4px}
 
 /* faders and knobs */
@@ -255,6 +266,12 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 .card h3{margin:0;font-size:17px;font-weight:800}
 .card p{margin:0;font-size:13.5px;line-height:1.4;color:var(--muted)}
 .card label{display:flex;flex-direction:column;gap:4px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.csel{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#161334;border:1px solid var(--edge-hi);border-radius:8px;font:14px var(--f-ui);color:var(--ink);padding:8px 10px;text-align:left;text-transform:none;letter-spacing:0;font-weight:500;width:100%;box-sizing:border-box}
+.csel span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.csel::after{content:"▾";color:var(--muted)}
+#cselPop{position:absolute;z-index:60;background:#1f1a40;border:1px solid var(--edge-hi);border-radius:12px;box-shadow:0 14px 40px rgba(0,0,0,.7);padding:6px;display:flex;flex-direction:column;gap:2px;max-height:300px;overflow:auto;box-sizing:border-box;touch-action:pan-y}
+#cselPop button{background:transparent;border:0;border-radius:8px;text-align:left;padding:11px 12px;font-size:15px}
+#cselPop button.on{background:var(--edge-hi)}
 .card select{background:#161334;color:var(--ink);border:1px solid var(--edge-hi);border-radius:8px;font:14px var(--f-ui);padding:6px 8px;max-width:100%}
 .card .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .card .avail{font-size:12.5px;color:var(--muted);border-left:3px solid var(--edge-hi);padding-left:8px;line-height:1.4}
@@ -343,10 +360,10 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
       <div class="dhead">
         <h2>Library</h2><span class="tgt" id="libTgt"></span>
         <label class="tb sm" for="addFiles">Add tracks</label>
-        <input type="file" id="addFiles" multiple accept="audio/*,.mp3,.m4a,.aac,.wav,.aif,.aiff,.flac,.ogg,.opus,.m3u,.m3u8" hidden>
+        <input type="file" id="addFiles" multiple accept=".mp3,.m4a,.aac,.wav,.aif,.aiff,.flac,.ogg,.opus,.m3u,.m3u8" hidden>
         <label class="tb sm" for="addFolder" id="addFolderLbl">Add folder</label>
         <input type="file" id="addFolder" multiple webkitdirectory hidden>
-        <input type="file" id="addPlaylist" multiple accept="audio/*,.mp3,.m4a,.aac,.wav,.aif,.aiff,.flac,.ogg,.opus,.m3u,.m3u8,audio/x-mpegurl,application/vnd.apple.mpegurl" hidden>
+        <input type="file" id="addPlaylist" multiple accept=".mp3,.m4a,.aac,.wav,.aif,.aiff,.flac,.ogg,.opus,.m3u,.m3u8" hidden>
         <span class="sp"></span>
         <input type="search" id="libSearch" placeholder="Search title or artist" aria-label="Search library">
         <button class="tb sm" id="libClose">Close</button>
@@ -439,8 +456,8 @@ const clamp=(x,a,b)=>x<a?a:x>b?b:x;
 const frac=x=>x-Math.floor(x);
 const PPS=150, SEC_PER_REV=1.8;
 const css=getComputedStyle(document.documentElement);
-const DC=['--a','--b'].map(v=>css.getPropertyValue(v).trim());
-const LET=['A','B'];
+const DC=['--a','--b','--c','--d'].map(v=>css.getPropertyValue(v).trim());
+const LET=['A','B','C','D'];
 const HOTC=['#ff5c7a','#3dd6ff','#2fe39a','#ffd23f'];
 const fmtT=t=>{t=Math.max(0,t);const m=Math.floor(t/60),s=t-m*60;return m+':'+(s<10?'0':'')+s.toFixed(1)};
 const fmtD=t=>{t=Math.max(0,Math.round(t));return Math.floor(t/60)+':'+String(t%60).padStart(2,'0')};
@@ -473,7 +490,7 @@ if(window.visualViewport)visualViewport.addEventListener('resize',layout);
 addEventListener('orientationchange',()=>setTimeout(layout,250));
 document.addEventListener('fullscreenchange',()=>setTimeout(layout,50));
 /* keep the page itself still: dragging moves the control under your finger, never the page */
-document.addEventListener('touchmove',e=>{if(!e.target.closest('.lib-main,.lib-side,.setup-body,.welcome'))e.preventDefault()},{passive:false});
+document.addEventListener('touchmove',e=>{if(!e.target.closest('.lib-main,.lib-side,.setup-body,.welcome,#cselPop'))e.preventDefault()},{passive:false});
 document.addEventListener('gesturestart',e=>e.preventDefault());
 document.addEventListener('dblclick',e=>{if(!e.target.closest('input,select'))e.preventDefault()});
 
@@ -636,11 +653,11 @@ const FX_TYPES=['DELAY','FLANGER','STUTTER','HPF','LPF'];
 const FX_NAME={DELAY:'Delay',FLANGER:'Flanger',STUTTER:'Stutter',HPF:'High-pass',LPF:'Low-pass'};
 const FX_P={DELAY:['TIME','FDBK'],FLANGER:['RATE','DEPTH'],STUTTER:['RATE',null],HPF:['FREQ','RES'],LPF:['FREQ','RES']};
 const ECHO_BEATS=[1/8,1/4,3/8,1/2,3/4,1,2],FL_BEATS=[1,2,4,8,16],ST_BEATS=[1/2,1/4,1/8,1/16];
-const decks=[0,1].map(k=>({k,letter:LET[k],color:DC[k],name:'',artist:'',buf:null,peaks:null,bpm:0,first:0,fader:0,range:0.08,playing:false,cue:0,hot:[null,null,null,null],loop:null,loopIn:null,lsize:4,
-  sync:false,vinyl:true,sens:1,keylock:false,rev:false,flux:false,roll:null,
+const decks=[0,1,2,3].map(k=>({k,letter:LET[k],color:DC[k],name:'',artist:'',buf:null,peaks:null,bpm:0,first:0,fader:0,range:0.08,playing:false,cue:0,hot:[null,null,null,null],loop:null,loopIn:null,lsize:4,
+  sync:k>=2,vinyl:true,sens:1,keylock:false,rev:false,flux:false,roll:null,
   pos:0,v:0,recv:0,seq:0,err:0,touching:false,jogBend:0,btnBend:0,wheelBend:0,sentBend:0,omega:0,lastJog:0,dur:0,
   fx:{type:k?'FLANGER':'DELAY',on:false,wet:0.5,p1:0.5,p2:0.4}}));
-const mix={ch:[0,1].map(()=>({trim:0,hi:0,mhi:0,mlo:0,lo:0,filt:0,fader:0.8,pfl:false})),xf:0,curve:'blend',master:0.8,cueMix:0.3,cueVol:0.8,mic:0.7,micOn:false};
+const mix={ch:[0,1,2,3].map(()=>({trim:0,hi:0,mhi:0,mlo:0,lo:0,filt:0,fader:0.8,pfl:false})),xf:0,curve:'blend',master:0.8,cueMix:0.3,cueVol:0.8,mic:0.7,micOn:false};
 const panelOf={L:'cues',R:'cues'};
 const view={L:0,R:1};
 const shift={L:false,R:false,key:false};
@@ -708,7 +725,7 @@ function applyMix(k){if(!G)return;const c=mix.ch[k],n=G.ch[k],t=ctx.currentTime,
   n.lp.Q.value=f<-0.02?1.1:0.7;n.hp.Q.value=f>0.02?1.1:0.7;
   n.fader.gain.setTargetAtTime(c.fader<=0?0:Math.pow(c.fader,1.6),t,tc);n.pfl.gain.setTargetAtTime(c.pfl?1:0,t,0.005)}
 function xfGains(){const t=(mix.xf+1)/2;if(mix.curve==='cut')return[clamp((1-t)*14,0,1),clamp(t*14,0,1)];return[Math.cos(t*Math.PI/2),Math.sin(t*Math.PI/2)]}
-function applyXf(){if(!G)return;const[gl,gr]=xfGains(),t=ctx.currentTime;G.ch.forEach((n,k)=>n.xf.gain.setTargetAtTime(k%2===0?gl:gr,t,0.004))}
+function applyXf(){if(!G)return;const[gl,gr]=xfGains(),t=ctx.currentTime;G.ch.forEach((n,k)=>n.xf.gain.setTargetAtTime(k>=2?1:k%2===0?gl:gr,t,0.004))}
 function applyMaster(){if(!G)return;const t=ctx.currentTime;G.masterG.gain.setTargetAtTime(mix.master*1.25,t,0.01);
   G.cueA.gain.setTargetAtTime(Math.cos(mix.cueMix*Math.PI/2),t,0.01);G.cueB.gain.setTargetAtTime(Math.sin(mix.cueMix*Math.PI/2),t,0.01);
   G.phonesG.gain.setTargetAtTime(mix.cueVol*1.2,t,0.01);G.micG.gain.setTargetAtTime(mix.micOn?mix.mic*1.6:0,t,0.01)}
@@ -815,7 +832,7 @@ async function loadTrack(k,tr){
     refreshAll();
   }catch(e){toast('Could not open '+tr.name+'. The file may be damaged or in a format this browser cannot play.',5000)}
 }
-function audible(k){const[gl,gr]=xfGains();return(k%2===0?gl:gr)>0.05}
+function audible(k){if(k>=2)return true;const[gl,gr]=xfGains();return(k%2===0?gl:gr)>0.05}
 
 /* ---------- UI components ---------- */
 function makeKnob(host,o){
@@ -875,12 +892,13 @@ function deckHTML(s){const k=s==='L'?0:1;return`<div class="deck side-${s}" id="
       <div class="bendrow"><button data-bend="-1" aria-label="Nudge slower" data-mid="${s}:bendm">−</button><button data-bend="1" aria-label="Nudge faster" data-mid="${s}:bendp">+</button></div>
       <div id="sens${s}"></div></div>
   </div>
-  <nav class="ptabs" role="tablist" aria-label="Deck ${LET[k]} controls"><button data-p="cues" role="tab">Cues</button><button data-p="loop" role="tab">Loop</button><button data-p="fx" role="tab">FX</button><button data-p="modes" role="tab">Modes</button></nav>
+  <nav class="ptabs" role="tablist" aria-label="Deck ${LET[k]} controls"><button data-p="cues" role="tab">Cues</button><button data-p="loop" role="tab">Loop</button><button data-p="fx" role="tab">FX</button><button data-p="modes" role="tab">Modes</button><button data-p="xd" role="tab">Deck ${LET[k+2]}</button></nav>
   <div class="panel">
     <div class="pane" data-pane="cues">${[0,1,2,3].map(i=>`<button class="pad" data-hot="${i}" data-mid="${s}:pad${i}" style="--pc:${HOTC[i]}"><small>CUE</small>${i+1}</button>`).join('')}</div>
     <div class="pane" data-pane="loop"><button class="pbtn" data-a="lin" data-mid="${s}:lin">IN</button><button class="pbtn" data-a="lout" data-mid="${s}:lout">OUT</button><button class="pbtn" data-a="lhalf" data-mid="${s}:lhalf" aria-label="Halve loop">÷2</button><div class="lsize"><span id="ls${s}">4</span><small>BEATS</small></div><button class="pbtn" data-a="ldbl" data-mid="${s}:ldbl" aria-label="Double loop">×2</button><button class="pbtn go" data-a="lauto" data-mid="${s}:lauto">LOOP</button></div>
     <div class="pane" data-pane="fx"><button class="fxt" data-a="fxtype" data-mid="${s}:fxtype" aria-label="Change effect"><span>EFFECT ⟳</span><b id="fxn${s}">Delay</b></button><div class="fxk" id="fxk${s}"></div><span class="fxv" id="fxv${s}"></span><button class="pbtn fxon" data-a="fxon" data-mid="${s}:fxon">ON</button></div>
     <div class="pane" data-pane="modes"><button class="pbtn" data-a="master" data-mid="${s}:master"><small>leader</small>MASTER</button><button class="pbtn" data-a="key" data-mid="${s}:key"><small>keylock</small>KEY</button><button class="pbtn" data-a="rev" data-mid="${s}:rev"><small>backwards</small>REV</button><button class="pbtn" data-a="brake" data-mid="${s}:brake"><small>stop</small>BRAKE</button><button class="pbtn" data-a="flux" data-mid="${s}:flux"><small>carry on</small>SLIP</button><button class="pbtn" data-a="vinyl" data-mid="${s}:vinyl"><small>scratch</small>VINYL</button><button class="pbtn" data-a="load"><small>library</small>LOAD</button></div>
+    <div class="pane xdeck" data-pane="xd" style="--xc:${DC[k+2]}"><button class="xplay" data-x="play" data-mid="${s}:xplay" aria-label="Play or pause deck ${LET[k+2]}">▶</button><button class="xinfo" data-x="load" aria-label="Load a track on deck ${LET[k+2]}"><b id="xt${s}">Deck ${LET[k+2]}</b><span class="xbar"><i id="xp${s}"></i></span><small id="xm${s}"></small></button><button class="xsync" data-x="sync" data-mid="${s}:xsync">SYNC</button><div id="xg${s}"></div><button class="fxt xfxt" data-x="fxtype" aria-label="Change effect on deck ${LET[k+2]}"><span>FX ⟳</span><b id="xfn${s}">Delay</b></button><div id="xa${s}"></div></div>
   </div></div>`}
 $('deckL').outerHTML=deckHTML('L');$('deckR').outerHTML=deckHTML('R');
 function setPanel(s,p){panelOf[s]=p;refreshAll()}
@@ -928,6 +946,11 @@ for(const s of['L','R']){
   dk.addEventListener('dragover',e=>{e.preventDefault();dk.classList.add('dropping')});dk.addEventListener('dragleave',()=>dk.classList.remove('dropping'));
   dk.addEventListener('drop',async e=>{e.preventDefault();dk.classList.remove('dropping');const added=await importFiles([...e.dataTransfer.files]);if(added[0])loadTrack(view[s],added[0])});
   setupJog(s);
+  {const xk=s==='L'?2:3,pane=dk.querySelector('[data-pane=xd]');
+   u.xg=makeKnob($('xg'+s),{label:'Gain',min:0,max:1,value:0.8,def:0.8,mid:`${s}:xgain`,onChange:v=>{mix.ch[xk].fader=v;applyMix(xk)}});
+   u.xa=makeKnob($('xa'+s),{label:'FX',min:0,max:1,value:0,def:0,mid:`${s}:xfx`,onChange:v=>{setXAmount(decks[xk],v);refreshAll()}});
+   pane.addEventListener('click',e=>{const b=e.target.closest('[data-x]');if(!b||stage.classList.contains('learning'))return;const d=decks[xk],a=b.dataset.x;
+     if(a==='play')togglePlay(d);else if(a==='load')openLib(xk);else if(a==='sync')toggleSync(d);else if(a==='fxtype')nextFx(d);refreshAll()})}
 }
 document.querySelectorAll('.pfl').forEach(b=>b.onclick=()=>{if(stage.classList.contains('learning'))return;togglePfl(b.dataset.pfl)});
 function togglePfl(s){const k=view[s];mix.ch[k].pfl=!mix.ch[k].pfl;applyMix(k);if(mix.ch[k].pfl&&outCfg.mode==='off')toast('Pick a headphone output in Setup to hear the cue');refreshAll()}
@@ -1035,12 +1058,23 @@ function drawVU(id,lv){const c=$(id),[w,h]=fit(c),g=c.getContext('2d');g.clearRe
   for(let i=0;i<N;i++){const f=(i+1)/N,y=h-(i+1)*sh;g.fillStyle=f>0.9?'#ff3b3b':f>0.75?'#ffcf33':'#39d353';g.globalAlpha=f<=p?1:(Math.abs(f-ph)<1/N?0.9:0.12);g.fillRect(0,y+1,w,sh-2)}g.globalAlpha=1}
 
 /* ---------- text + button state ---------- */
+/* Decks C and D: one compact row each under deck A / B */
+function xAmount(d){const f=d.fx;return!f.on?0:(f.type==='DELAY'||f.type==='FLANGER')?f.wet:f.p1}
+function setXAmount(d,v){const f=d.fx;f.on=v>0.02;if(f.type==='DELAY'||f.type==='FLANGER')f.wet=v;else{f.p1=v;f.wet=1}
+  if(f.type==='STUTTER'){ensureAudio();if(f.on)startRoll(d);else stopRoll(d)}applyFx(d.k)}
+function refreshX(s){const xk=s==='L'?2:3,d=decks[xk],u=ui[s],pane=$('dk'+s).querySelector('[data-pane=xd]');if(!pane||!u.xg)return;
+  $('xt'+s).textContent=d.buf||d.loading?d.name:'Tap to load a track';
+  $('xm'+s).textContent=(d.sync?'SYNCED':'FREE')+' · '+(d.bpm?(d.bpm*ratio(d)).toFixed(1)+' BPM':'—');
+  const pb=pane.querySelector('[data-x=play]');pb.classList.toggle('on',d.playing);pb.textContent=d.playing?'❚❚':'▶';
+  pane.querySelector('[data-x=sync]').classList.toggle('on',d.sync);$('xfn'+s).textContent=FX_NAME[d.fx.type];
+  u.xg.set(mix.ch[xk].fader,false);u.xa.set(xAmount(d),false)}
 function refreshText(){
   for(const s of['L','R']){const d=sideDeck(s),p=dispPos(d),r=ratio(d);
     $('el'+s).textContent=fmtT(p);$('rm'+s).textContent='-'+fmtT(d.dur-p);
     $('bpm'+s).textContent=d.bpm?(d.bpm*r).toFixed(2):'—';const pc=(r-1)*100;$('pitch'+s).textContent=(pc>=0?'+':'')+pc.toFixed(2)+'%';
     $('tv'+s).textContent=(pc>=0?'+':'')+pc.toFixed(2)+'%';
     $('fL'+s).classList.toggle('on',d.sync&&d.playing&&decks[master].playing&&Math.abs(d.err)<0.01)}
+  for(const s of['L','R']){const d=decks[s==='L'?2:3],b=$('xp'+s);if(b)b.style.width=(d.dur?clamp(dispPos(d)/d.dur,0,1)*100:0)+'%'}
   if(rec)$('recTime').textContent=fmtD((performance.now()-rec.t0)/1000).padStart(5,'0')}
 function refreshAll(){
   for(const s of['L','R']){const d=sideDeck(s),k=d.k,u=ui[s],dk=$('dk'+s),q=a=>dk.querySelector(`[data-a=${a}]`),f=d.fx,P=FX_P[f.type];
@@ -1055,13 +1089,13 @@ function refreshAll(){
     $('fxn'+s).textContent=FX_NAME[f.type];$('fxv'+s).textContent=fxInfo(d).txt;
     u.fx.wet.set(f.wet,false);u.fx.p1.set(f.p1,false);u.fx.p2.set(f.p2,false);u.fx.p1.setLabel(P[0]);if(P[1])u.fx.p2.setLabel(P[1]);
     u.fx.p2.wrap.hidden=!P[1];u.fx.wet.wrap.hidden=f.type==='STUTTER';
-    dk.querySelectorAll('[data-p]').forEach(b=>{const p=b.dataset.p,sel=p===panelOf[s],live=(p==='loop'&&!!d.loop)||(p==='fx'&&f.on)||(p==='modes'&&(d.keylock||d.rev||d.flux));
-      b.classList.toggle('on',sel);b.setAttribute('aria-selected',sel);b.innerHTML={cues:'Cues',loop:'Loop',fx:'FX',modes:'Modes'}[p]+(live&&!sel?'<span class="dot"></span>':'')});
+    dk.querySelectorAll('[data-p]').forEach(b=>{const p=b.dataset.p,sel=p===panelOf[s],live=(p==='xd'&&decks[k+2].playing)||(p==='loop'&&!!d.loop)||(p==='fx'&&f.on)||(p==='modes'&&(d.keylock||d.rev||d.flux));
+      b.classList.toggle('on',sel);b.setAttribute('aria-selected',sel);b.innerHTML={cues:'Cues',loop:'Loop',fx:'FX',modes:'Modes',xd:'Deck '+LET[k+2]}[p]+(live&&!sel?'<span class="dot"></span>':'')});
     dk.querySelectorAll('.pane').forEach(p=>p.hidden=p.dataset.pane!==panelOf[s]);
     u.tf.set(d.sync?clamp((ratio(d)-1)/d.range,-1,1):d.fader,false);u.tf.el.style.opacity=d.sync?0.55:1;u.sens.set(d.sens,false);
     const c=mix.ch[k];u.cf.set(c.fader,false);for(const key in u.kn)u.kn[key].set(c[key],false);
     document.querySelector(`.pfl[data-pfl=${s}]`).classList.toggle('on',c.pfl);
-    $('mxh'+s).textContent=d.letter}
+    $('mxh'+s).textContent=d.letter;refreshX(s)}
   $('micBtn').classList.toggle('on',mix.micOn);
   refreshText();
 }
@@ -1089,8 +1123,21 @@ $('recBtn').onclick=()=>{if(!stage.classList.contains('learning'))toggleRec()};
 $('fsBtn').onclick=()=>{const el=document.documentElement;if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});else if(el.requestFullscreen)el.requestFullscreen().catch(()=>toast('Full screen is not available here'));else toast('Full screen is not available here')};
 
 /* ---------- setup: devices, mic ---------- */
-function openSetup(){closeLib();$('setup').classList.add('open');refreshDevices();updateAvail()}
-function closeSetup(){$('setup').classList.remove('open')}
+/* the app's own dropdowns, so menus open inside the (possibly sideways) console instead of the system picker */
+function cselLabel(sel){const b=sel.nextElementSibling;if(b&&b.classList.contains('csel')){const o=sel.options[sel.selectedIndex];b.firstChild.textContent=o?o.text:''}}
+function syncSelects(){document.querySelectorAll('#setup select').forEach(cselLabel)}
+function closeCsel(){const p=$('cselPop');if(p)p.remove()}
+document.querySelectorAll('#setup select').forEach(sel=>{sel.hidden=true;const b=document.createElement('button');b.type='button';b.className='csel';b.innerHTML='<span></span>';b.setAttribute('aria-haspopup','listbox');
+  sel.after(b);cselLabel(sel);
+  b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const open=$('cselPop');closeCsel();if(open&&open.dataset.for===sel.id)return;
+    const pop=document.createElement('div');pop.id='cselPop';pop.dataset.for=sel.id;pop.setAttribute('role','listbox');
+    [...sel.options].forEach(o=>{const ob=document.createElement('button');ob.type='button';ob.textContent=o.text;ob.setAttribute('role','option');ob.classList.toggle('on',o.value===sel.value);
+      ob.onclick=ev=>{ev.stopPropagation();sel.value=o.value;cselLabel(sel);closeCsel();sel.dispatchEvent(new Event('change'))};pop.appendChild(ob)});
+    stage.appendChild(pop);const r=elRect(b);pop.style.minWidth=r.width+'px';pop.style.left=Math.min(r.left,1280-r.width-8)+'px';
+    const ph=pop.offsetHeight;pop.style.top=(r.top+r.height+4+ph>SH-8?Math.max(8,r.top-ph-4):r.top+r.height+4)+'px'})});
+document.addEventListener('pointerdown',e=>{if($('cselPop')&&!e.target.closest('#cselPop,.csel'))closeCsel()},true);
+function openSetup(){closeLib();$('setup').classList.add('open');refreshDevices().then(syncSelects);updateAvail();syncSelects()}
+function closeSetup(){$('setup').classList.remove('open');closeCsel()}
 $('setupBtn').onclick=()=>$('setup').classList.contains('open')?closeSetup():openSetup();$('setupClose').onclick=closeSetup;
 function avail(id,ok,txt){const el=$(id);el.className='avail '+(ok?'ok':'no');el.textContent=txt}
 function updateAvail(){
@@ -1160,7 +1207,8 @@ const REG={};
       [s+':fxon']:tap(()=>toggleFx(D())),[s+':fxtype']:tap(()=>nextFx(D())),
       [s+':lin']:tap(()=>loopIn(D())),[s+':lout']:tap(()=>loopOut(D())),[s+':lhalf']:tap(()=>loopSize(D(),0.5)),[s+':ldbl']:tap(()=>loopSize(D(),2)),[s+':lauto']:tap(()=>autoLoop(D())),
       [s+':bendm']:{btn:down=>{const d=D();d.btnBend=down?-0.04:0;updateBend(d)}},[s+':bendp']:{btn:down=>{const d=D();d.btnBend=down?0.04:0;updateBend(d)}},
-      [s+':pfl']:tap(()=>togglePfl(s)),
+      [s+':pfl']:tap(()=>togglePfl(s)),[s+':xplay']:tap(()=>togglePlay(decks[s==='L'?2:3])),[s+':xsync']:tap(()=>toggleSync(decks[s==='L'?2:3])),
+      [s+':xgain']:{val:v=>u.xg.midi(v)},[s+':xfx']:{val:v=>u.xa.midi(v)},
       [s+':tempo']:{val:v=>u.tf.midi(v)},[s+':cf']:{val:v=>u.cf.midi(v)},[s+':sens']:{val:v=>u.sens.midi(v)},
       [s+':jog']:{jog:dt=>jogTicks(s,dt,true)},[s+':jogtouch']:{btn:down=>{const d=D();if(!d.buf)return;ensureAudio();midiTouch[s]=down;if(d.vinyl||!d.playing){d.touching=down;post({t:'touch',d:d.k,on:down})}}}});
     for(const k in u.kn)REG[`${s}:kn:${k}`]={val:v=>u.kn[k].midi(v)};
@@ -1312,7 +1360,7 @@ function bootDeck(k,i){const d=decks[k];d.loading=true;d.name='Loading demo…';
   return bootP[k]=demoBuf(i).then(buf=>{const an=analyze(buf);
     Object.assign(d,{buf,loading:false,name:DEMOS[i].name,artist:'Demo · '+DEMOS[i].genre,peaks:computePeaks(buf),bpm:an.bpm,first:an.first,dur:buf.L.length/buf.sr,pos:an.first,cue:an.first});
     if(node)sendLoad(d);refreshAll()})}
-layout();bootDeck(0,0);bootDeck(1,1);refreshAll();renderLib();updateAvail();requestAnimationFrame(frame);
+layout();bootDeck(0,0);bootDeck(1,1);Promise.all([bootP[0],bootP[1]]).then(()=>{bootDeck(2,2);bootDeck(3,3)});refreshAll();renderLib();updateAvail();requestAnimationFrame(frame);
 /* ---------- installable app (hosted version only: it ships a manifest and service worker) ---------- */
 let installEvt=null;
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;$('installBtn').hidden=false;$('installBtn').classList.add('on')});
