@@ -216,7 +216,20 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 .crate{background:transparent;border:0;text-align:left;padding:8px 10px;border-radius:10px;font-size:15px;color:var(--muted);display:flex;justify-content:space-between;gap:6px}
 .crate.on{background:#231e48;color:var(--ink)}
 .crate small{font-family:var(--f-mono);font-size:11px;color:var(--dim)}
-.lib-note{margin-top:auto;font-size:12.5px;line-height:1.4;color:var(--muted);border-top:1px solid var(--edge);padding-top:10px}
+.srcs{display:flex;flex-direction:column;gap:6px;margin-top:auto;border-top:1px solid var(--edge);padding-top:10px}
+.src{display:flex;flex-direction:column;gap:1px;background:var(--well);border:1px solid var(--edge-hi);border-radius:12px;padding:9px 11px;cursor:pointer}
+.src b{font-size:14.5px}.src small{font-size:12px;color:var(--muted);line-height:1.3}
+.src:hover{border-color:var(--a)}
+.why{font-size:12.5px;color:var(--muted);line-height:1.4}
+.why summary{cursor:pointer;color:var(--ink);font-weight:600;padding:4px 0}
+.why p{margin:4px 0 0}
+.grip{cursor:grab;touch-action:none;color:var(--muted);font-size:17px;letter-spacing:-3px;padding:8px 4px 8px 12px!important;width:18px}
+.grip:active{cursor:grabbing}
+.lib.dragging{transform:translateY(calc(100% - 96px));transition:transform .16s ease}
+#dragGhost{position:absolute;z-index:50;transform:translate(-50%,-140%);background:var(--ink);color:var(--screen);font-weight:700;font-size:16px;padding:9px 16px;border-radius:999px;pointer-events:none;white-space:nowrap;max-width:360px;overflow:hidden;text-overflow:ellipsis;box-shadow:0 10px 30px rgba(0,0,0,.6)}
+#stage.dropmode .deck::after{content:attr(data-drop);position:absolute;inset:0;z-index:9;display:grid;place-items:center;border-radius:18px;border:3px dashed var(--dc);background:rgba(10,8,24,.6);font-size:30px;font-weight:800;color:var(--dc)}
+#stage.dropmode .deck.droptarget::after{background:color-mix(in srgb,var(--dc) 35%,rgba(10,8,24,.55));color:#fff;border-style:solid}
+.lib-note{margin-top:4px;font-size:12.5px;line-height:1.4;color:var(--muted);border-top:1px solid var(--edge);padding-top:10px}
 .lib-main{overflow:auto;min-height:0}
 .lib table{width:100%;border-collapse:collapse;font-size:15px}
 .lib th{position:sticky;top:0;background:#100d24;text-align:left;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:9px;border-bottom:1px solid var(--edge);font-weight:600}
@@ -329,7 +342,7 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
         <button class="tb sm" id="libClose">Close</button>
       </div>
       <nav class="lib-side" id="crates"></nav>
-      <div class="lib-main"><table><thead><tr><th>#</th><th>Title</th><th>Artist</th><th>BPM</th><th>Time</th><th>Load to deck</th><th></th></tr></thead><tbody id="libRows"></tbody></table></div>
+      <div class="lib-main"><table><thead><tr><th aria-label="Drag"></th><th>#</th><th>Title</th><th>Artist</th><th>BPM</th><th>Time</th><th>Load to deck</th><th></th></tr></thead><tbody id="libRows"></tbody></table></div>
     </section>
 
     <section class="drawer" id="setup" aria-label="Setup">
@@ -403,6 +416,7 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
       <p id="tipText"></p>
       <div class="tip-row"><button class="tb sm" id="tipBack">Back</button><span class="tip-done" id="tipDone" hidden>✓ Nice</span><button class="tb sm" id="tipNext">Skip</button></div>
     </div>
+    <div id="dragGhost" hidden></div>
     <div class="toast" id="toast"></div>
   </div>
 </div>
@@ -830,7 +844,7 @@ function makeFader(host,o){
 }
 
 /* ---------- build the decks ---------- */
-function deckHTML(s){const k=s==='L'?0:1;return`<div class="deck side-${s}" id="dk${s}">
+function deckHTML(s){const k=s==='L'?0:1;return`<div class="deck side-${s}" id="dk${s}" data-drop="Drop on Deck ${LET[k]}">
   <header class="dhead">
     <span class="dl" id="dl${s}">${LET[k]}</span>
     <div class="ti"><div class="title" id="title${s}">Empty deck</div><div class="sub"><b id="el${s}">0:00.0</b><span id="rm${s}">-0:00.0</span><span id="art${s}"></span></div></div>
@@ -1193,26 +1207,48 @@ function renderLib(){
   const cr=$('crates');cr.innerHTML='';
   for(const c of lib.crates){const n=c.id==='mixes'?takes.length:c.id==='all'?lib.tracks.filter(t=>t.demo==null).length:lib.tracks.filter(t=>t.crates.includes(c.id)).length;
     const b=document.createElement('button');b.className='crate'+(lib.sel===c.id?' on':'');b.innerHTML=`<span></span><small>${n}</small>`;b.firstChild.textContent=c.name;b.onclick=()=>{lib.sel=c.id;renderLib()};cr.appendChild(b)}
-  const note=document.createElement('div');note.className='lib-note';
-  note.innerHTML='<b>Phone or tablet:</b> Add tracks opens your Files app. iCloud Drive, Google Drive, Dropbox and OneDrive show up there as locations, so you can pick from your cloud library. Add an .m3u playlist in the same pick as its songs to keep the order.<br><br>Tracks stay in this browser on this device.<br><br><b>Recordings:</b> Save opens your share sheet on a phone or tablet. Choose Save to Files to put the mix in iCloud Drive, Google Drive or Dropbox.';cr.appendChild(note);
+  const src=document.createElement('div');src.className='srcs';
+  src.innerHTML=`<span class="lbl">Add music</span>
+    <label class="src" for="addFiles"><b>Files &amp; cloud drives</b><small>iCloud Drive, Google Drive, Dropbox, OneDrive or this device. Pick songs and .m3u playlists.</small></label>
+    ${$('addFolderLbl').hidden?'':`<label class="src" for="addFolder"><b>Music folder</b><small>Your iTunes or Music folder on this computer. Each folder becomes a crate.</small></label>`}
+    <details class="why"><summary>Spotify or Apple Music?</summary><p>Streaming songs are copy-protected and their licences don't allow mixing in other apps, so no web DJ app can play them through decks and effects. Songs you've bought or downloaded as files work: add them from Files or your Music folder.</p></details>
+    <div class="lib-note">Drag a song by its ⋮⋮ handle onto a deck, or tap A or B. Tracks stay in this browser on this device.</div>`;
+  cr.appendChild(src);
   const c=lib.crates.find(x=>x.id===lib.sel);
   if(lib.sel==='mixes'){const tb=$('libRows');tb.innerHTML='';
-    if(!takes.length){tb.innerHTML=`<tr><td colspan="7" style="color:var(--muted);padding:24px 8px">No recordings yet. Press REC in the top bar to record your mix. It appears here, ready to save.</td></tr>`;return}
-    takes.forEach((t,i)=>{const tr=document.createElement('tr');tr.innerHTML=`<td class="mono">${i+1}</td><td></td><td>Recorded mix</td><td class="mono">${(t.blob.size/1048576).toFixed(1)} MB</td><td class="mono">${fmtD(t.dur)}</td><td><div class="ld"><button style="--kc:var(--go)">Save</button></div></td><td></td>`;
-      tr.children[1].textContent=t.name.replace(/\.(webm|mp4)$/,'');tr.querySelector('button').onclick=()=>saveTake(t);tb.appendChild(tr)});return}
+    if(!takes.length){tb.innerHTML=`<tr><td colspan="8" style="color:var(--muted);padding:24px 8px">No recordings yet. Press REC in the top bar to record your mix. It appears here, ready to save.</td></tr>`;return}
+    takes.forEach((t,i)=>{const tr=document.createElement('tr');tr.innerHTML=`<td></td><td class="mono">${i+1}</td><td></td><td>Recorded mix</td><td class="mono">${(t.blob.size/1048576).toFixed(1)} MB</td><td class="mono">${fmtD(t.dur)}</td><td><div class="ld"><button style="--kc:var(--go)">Save</button></div></td><td></td>`;
+      tr.children[2].textContent=t.name.replace(/\.(webm|mp4)$/,'');tr.querySelector('button').onclick=()=>saveTake(t);tb.appendChild(tr)});return}
   let rows=lib.sel==='all'?lib.tracks.filter(t=>t.demo==null):lib.tracks.filter(t=>t.crates.includes(lib.sel));
   if(c&&c.order)rows=c.order.map(id=>rows.find(t=>t.id===id)).filter(Boolean);
   if(lib.q)rows=rows.filter(t=>(t.name+' '+t.artist).toLowerCase().includes(lib.q));
   const tb=$('libRows');tb.innerHTML='';
-  if(!rows.length){tb.innerHTML=`<tr><td colspan="7" style="color:var(--muted);padding:24px 8px">${lib.sel==='all'?'No tracks yet. Use Add tracks to bring in music from this device or a cloud drive.':'Nothing matches.'}</td></tr>`;return}
+  if(!rows.length){tb.innerHTML=`<tr><td colspan="8" style="color:var(--muted);padding:24px 8px">${lib.sel==='all'?'No tracks yet. Use Add tracks to bring in music from this device or a cloud drive.':'Nothing matches.'}</td></tr>`;return}
   rows.forEach((t,i)=>{const tr=document.createElement('tr');
-    tr.innerHTML=`<td class="mono">${i+1}</td><td></td><td></td><td class="mono">${t.bad?'error':t.bpm?t.bpm.toFixed(2):'…'}</td><td class="mono">${t.dur?fmtD(t.dur):'…'}</td><td><div class="ld">${LET.map((L,k)=>`<button data-k="${k}" style="--kc:${DC[k]}" aria-label="Load to deck ${L}">${L}</button>`).join('')}</div></td><td>${t.demo==null?'<button class="rm" aria-label="Remove from library">×</button>':''}</td>`;
-    tr.children[1].textContent=t.name;tr.children[2].textContent=t.artist;
+    tr.innerHTML=`<td class="grip" title="Drag onto a deck" aria-label="Drag onto a deck">⋮⋮</td><td class="mono">${i+1}</td><td></td><td></td><td class="mono">${t.bad?'error':t.bpm?t.bpm.toFixed(2):'…'}</td><td class="mono">${t.dur?fmtD(t.dur):'…'}</td><td><div class="ld">${LET.map((L,k)=>`<button data-k="${k}" style="--kc:${DC[k]}" aria-label="Load to deck ${L}">${L}</button>`).join('')}</div></td><td>${t.demo==null?'<button class="rm" aria-label="Remove from library">×</button>':''}</td>`;
+    tr.children[2].textContent=t.name;tr.children[3].textContent=t.artist;
+    tr.firstChild.addEventListener('pointerdown',e=>startRowDrag(e,t));
+    tr.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'||e.button>0||e.target.closest('button,.grip'))return;const sx=e.clientX,sy=e.clientY;
+      const mv=ev=>{if(Math.hypot(ev.clientX-sx,ev.clientY-sy)>6){cl();startRowDrag(ev,t)}},cl=()=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',cl)};
+      addEventListener('pointermove',mv);addEventListener('pointerup',cl)});
     tr.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{loadTrack(+b.dataset.k,t);closeLib()});
     tr.ondblclick=()=>{loadTrack(lib.target!=null?lib.target:view.L,t);closeLib()};
     const rm=tr.querySelector('.rm');if(rm)rm.onclick=e=>{e.stopPropagation();lib.tracks=lib.tracks.filter(x=>x!==t);IDB.del('tracks',t.id);renderLib()};
     tb.appendChild(tr)});
 }
+/* drag a Library row onto a deck: the drawer slides down to reveal the decks */
+let rowDrag=null;
+function startRowDrag(e,t){if(rowDrag||e.button>0)return;e.preventDefault();e.stopPropagation();
+  const g=$('dragGhost');g.textContent='♪ '+t.name;g.hidden=false;rowDrag={t,pid:e.pointerId,target:null};
+  $('lib').classList.add('dragging');stage.classList.add('dropmode');moveRowDrag(e);
+  const mv=ev=>{if(ev.pointerId===rowDrag.pid){ev.preventDefault();moveRowDrag(ev)}},
+    up=ev=>{if(ev.pointerId!==rowDrag.pid)return;removeEventListener('pointermove',mv);removeEventListener('pointerup',up);removeEventListener('pointercancel',up);endRowDrag(ev.type==='pointerup')};
+  addEventListener('pointermove',mv,{passive:false});addEventListener('pointerup',up);addEventListener('pointercancel',up)}
+function moveRowDrag(e){const q=localPt(e.clientX,e.clientY),g=$('dragGhost');g.style.left=q.x+'px';g.style.top=q.y+'px';let tgt=null;
+  for(const s of['L','R']){const r=elRect($('dk'+s)),on=q.x>=r.left&&q.x<=r.left+r.width&&q.y>=r.top&&q.y<=r.top+r.height;$('dk'+s).classList.toggle('droptarget',on);if(on)tgt=view[s]}
+  rowDrag.target=tgt}
+function endRowDrag(drop){$('dragGhost').hidden=true;$('lib').classList.remove('dragging');stage.classList.remove('dropmode');['L','R'].forEach(s=>$('dk'+s).classList.remove('droptarget'));
+  const r=rowDrag;rowDrag=null;if(drop&&r&&r.target!=null){closeLib();loadTrack(r.target,r.t)}}
 async function restoreLib(){await IDB.open();const cs=await IDB.all('crates')||[];const ts=await IDB.all('tracks')||[];
   cs.forEach(c=>{if(!lib.crates.find(x=>x.id===c.id))lib.crates.push(c)});ts.forEach(t=>{if(t.blob)lib.tracks.push(t)});renderLib();queueAnalysis(ts.filter(t=>!t.bpm))}
 
