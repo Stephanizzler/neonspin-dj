@@ -775,7 +775,9 @@ const sideDeck=s=>decks[view[s]];
 const rate=d=>1+d.fader*d.range;
 const fold=r=>{while(r>1.5)r/=2;while(r<0.75)r*=2;return r};
 function ratio(d){const m=decks[master];if(d.sync&&d.k!==master&&m.bpm&&d.bpm&&m.buf)return fold(m.bpm*rate(m)/d.bpm);return rate(d)}
-const effBpm=d=>d.bpm?d.bpm*ratio(d):120;
+/* tempo the deck's effects follow; songs without a BPM (vocals) follow the mix */
+const mixBpm=()=>{const m=decks[master].bpm?decks[master]:decks.find(x=>x.playing&&x.bpm)||decks.find(x=>x.bpm);return m?m.bpm*ratio(m):120};
+const effBpm=d=>d.bpm?d.bpm*ratio(d):mixBpm();
 function dispPos(d){if(!d.recv)return d.pos;const dt=Math.min(0.1,(performance.now()-d.recv)/1000);return clamp(d.pos+d.v*dt,0,d.dur)}
 
 /* ---------- audio engine ---------- */
@@ -864,7 +866,7 @@ function applyFx(k){const d=decks[k],f=d.fx;if(!G)return;const n=G.ch[k],t=ctx.c
   if(f.type==='FLANGER'&&x.osc){x.osc.frequency.setTargetAtTime(1/(info.b*bl),t,0.05);x.dep.gain.setTargetAtTime(0.0008+0.0032*f.p2,t,0.02);x.fb.gain.setTargetAtTime(0.25+0.55*f.p2,t,0.02)}
   if(filt&&x.fl){x.fl.frequency.setTargetAtTime(fxHz(f),t,0.015);x.fl.Q.setTargetAtTime(0.7+f.p2*11,t,0.02)}}
 /* Stutter: repeat a short beat-locked slice; slip keeps the track running underneath so it lands back in time */
-function startRoll(d){if(!d.buf||!d.bpm)return;const sl=60/d.bpm*fxInfo(d).b,p=dispPos(d),s=d.first+Math.floor((p-d.first)/sl)*sl;
+function startRoll(d){if(!d.buf)return;const bpm=d.bpm||effBpm(d),first=d.bpm?d.first:0,sl=60/bpm*fxInfo(d).b,p=dispPos(d),s=first+Math.floor((p-first)/sl)*sl;
   if(!d.roll)d.roll={flux:d.flux};d.roll.s=s;d.roll.e=s+sl;if(!d.roll.flux)post({t:'flux',d:d.k,on:true});post({t:'loop',d:d.k,on:true,s,e:s+sl})}
 function stopRoll(d){if(!d.roll)return;const r=d.roll;d.roll=null;postLoop(d);if(!r.flux)setTimeout(()=>post({t:'flux',d:d.k,on:false}),40)}
 
@@ -890,7 +892,9 @@ function route(){if(!G)return;const dst=ctx.destination;
 /* ---------- deck actions ---------- */
 function setTempo(d){post({t:'tempo',d:d.k,rate:rate(d)})}
 function seek(d,t){t=clamp(t,0,Math.max(0,d.dur-0.01));d.pos=t;d.recv=performance.now();if(!d.playing)d.v=0;d.seq++;post({t:'seek',d:d.k,pos:t,seq:d.seq})}
-async function togglePlay(d){if(d.loading){toast('The demo track is still loading');return}if(!d.buf){openLib(d.k);return}await ensureAudio();d.playing=!d.playing;post({t:'play',d:d.k,on:d.playing});refreshAll()}
+async function togglePlay(d){if(d.loading){toast('The demo track is still loading');return}if(!d.buf){openLib(d.k);return}await ensureAudio();
+  if(!d.playing&&d.dur&&dispPos(d)>=d.dur-0.06)seek(d,d.cue<d.dur-0.06?d.cue:0);   /* at the end: start again */
+  d.playing=!d.playing;post({t:'play',d:d.k,on:d.playing});refreshAll()}
 async function cueDown(d,sh){if(!d.buf)return;await ensureAudio();const p=dispPos(d);
   if(sh){if(d.playing){d.playing=false;post({t:'play',d:d.k,on:false})}seek(d,0);refreshAll();return}
   if(d.playing){d.playing=false;post({t:'play',d:d.k,on:false});seek(d,d.cue)}
