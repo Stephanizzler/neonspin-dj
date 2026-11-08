@@ -1352,11 +1352,25 @@ $('selPh').onchange=e=>{outCfg.phones=e.target.value;LS.set('ph-out',outCfg);if(
 $('selMic').onchange=e=>{outCfg.mic=e.target.value;LS.set('ph-out',outCfg);if(mix.micOn){stopMic();startMic()}};
 let micStream=null,micSrc=null;
 /* the mic stream is shared by the live mic channel and the mic sampler; the live channel stays silent unless MIC is on */
+/* iOS: the app normally runs as "playback" so the silent switch can't mute it, but that mode forbids the mic.
+   Switch to "play-and-record" (which also ignores the silent switch) only while the mic is in use. */
+function setAudioSession(type){try{if(navigator.audioSession&&navigator.audioSession.type!==type)navigator.audioSession.type=type}catch(e){}}
+function micErr(e){const n=e&&e.name;
+  if(window.top!==window)return'This view blocks the microphone. Open SoundLab DJ from its website or Home Screen icon to use the mic.';
+  if(n==='NotAllowedError'||n==='SecurityError')return isIOS?'Microphone access is off for SoundLab DJ. Open iPhone Settings › Apps › Safari › Microphone (older iPhones: Settings › Safari › Microphone), choose Ask or Allow, then reopen the app and try again.'
+    :'Microphone access was blocked. Allow the microphone for this site in your browser settings, then try again.';
+  if(n==='NotFoundError'||n==='OverconstrainedError')return'No microphone was found. Check one is connected, or pick another in Setup › Microphone.';
+  if(n==='NotReadableError'||n==='AbortError')return'Another app is using the microphone, or a call is active. Close it and try again.';
+  return`The microphone could not start (${n||'unknown error'}).`}
 async function getMic(){if(micSrc)return true;try{await ensureAudio()}catch(e){return false}
-  try{micStream=await navigator.mediaDevices.getUserMedia({audio:{deviceId:outCfg.mic?{exact:outCfg.mic}:undefined,echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){toast('This browser has no microphone input.',4000);return false}
+  setAudioSession('play-and-record');
+  const ask=dev=>navigator.mediaDevices.getUserMedia({audio:{deviceId:dev?{exact:dev}:undefined,echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+  try{try{micStream=await ask(outCfg.mic)}catch(e){if(outCfg.mic&&(e.name==='OverconstrainedError'||e.name==='NotFoundError')){outCfg.mic='';LS.set('ph-out',outCfg);micStream=await ask('')}else throw e}
+    if(ctx.state!=='running')try{await ctx.resume()}catch(e){}
     micSrc=ctx.createMediaStreamSource(micStream);micSrc.connect(G.micG);if(G.cap)micSrc.connect(G.cap);return true}
-  catch(e){toast('The microphone was refused here. It works on the website version once you allow it.',5000);return false}}
-function releaseMic(){if(micSrc)try{micSrc.disconnect()}catch(e){}if(micStream)micStream.getTracks().forEach(t=>t.stop());micSrc=micStream=null}
+  catch(e){setAudioSession('playback');toast(micErr(e),8000);return false}}
+function releaseMic(){if(micSrc)try{micSrc.disconnect()}catch(e){}if(micStream)micStream.getTracks().forEach(t=>t.stop());micSrc=micStream=null;setAudioSession('playback')}
 async function startMic(){if(!(await getMic()))return false;mix.micOn=true;applyMaster();refreshAll();$('micEnable').textContent='Turn mic off';toast('Mic is live');return true}
 function stopMic(){mix.micOn=false;applyMaster();refreshAll();$('micEnable').textContent='Turn mic on';if(!micCap.on)releaseMic()}
 function toggleMic(){if(mix.micOn)stopMic();else startMic()}
