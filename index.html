@@ -689,6 +689,7 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
           <div class="avail" id="avMidi"></div>
           <div class="row"><button class="tb sm" id="midiConnect">Connect MIDI</button><button class="tb sm" id="midiLearn2">Start MIDI Learn</button><button class="tb sm" id="midiClear">Clear mappings</button></div>
           <div class="devlist" id="midiDevs">No controllers connected.</div>
+          <label for="scrFeel"><span>Scratch response</span><select id="scrFeel"><option value="tight">Tight: fastest, predicts your hand</option><option value="smooth">Smooth: the original feel</option></select></label>
           <label for="jogTicks"><span>Jog wheel resolution: <b class="mono" id="jogTicksV">512</b> ticks per turn</span><input type="range" id="jogTicks" min="64" max="2048" step="32" value="512"></label>
           <p>MIDI Learn: click a control on screen, then move the matching knob, fader or button on your controller. For a jog wheel, click the platter, spin the wheel, then touch its top. Mappings are saved in this browser.</p>
         </div>
@@ -921,8 +922,9 @@ class Decks extends AudioWorkletProcessor{
   case'kl':d.kl=m.on;break;
   case'tempo':d.tempo=m.rate;break;
   case'bend':d.bend=m.v;break;
-  case'touch':d.touch=m.on;d.target=d.pos;if(m.on)d.brake=0;break;
-  case'scratch':d.target=clamp(d.target+m.delta*d.sr,1,end);break;
+  case'touch':d.touch=m.on;d.target=d.pos;d.hv=0;d.ext=0;d.hvLeft=0;if(m.on)d.brake=0;break;
+  case'scratch':d.target=clamp(d.target+m.delta*d.sr,1,end);d.ext=0;d.hv=(m.hv||0)*0.85*d.sr/sampleRate;d.hvLeft=m.hv?Math.round(sampleRate*0.016):0;break;
+  case'feel':this.kP=1/(sampleRate*(m.tight?0.007:0.014));this.kT=1/(sampleRate*(m.tight?0.002:0.003));break;
   case'seek':d.pos=d.target=clamp(m.pos*d.sr,1,end);d.seq=m.seq;d.inEv=false;if(!d.playing)d.vel=0;if(d.sync&&d.playing)d.jump=true;break;
   case'sync':d.sync=m.on;if(m.on)d.jump=true;break;
   case'grid':d.bpm=m.bpm;d.first=m.first;break;
@@ -942,10 +944,10 @@ class Decks extends AudioWorkletProcessor{
    const ev=d.touch||d.ls>=0||d.dir<0;
    if(d.flux&&d.playing){if(ev){if(!d.inEv){d.inEv=true;d.shadow=d.pos}d.shadow+=base*(1+d.bend)*d.srr*n}else if(d.inEv){d.inEv=false;d.pos=d.target=clamp(d.shadow,1,d.len-3)}}else d.inEv=false;
    let tw=d.playing?base*(1+d.bend)*d.srr*d.dir:0;
-   const L=d.L,R=d.R,st=R===L,end=d.len-3,kT=this.kT,kP=this.kP,touch=d.touch,tgt=d.target,cc=d.playing?0.0016:0.001,ls=d.ls,le=d.le,kL=d.kL,kR=d.kR,klOn=d.kl&&!touch?1:0;
-   let pos=d.pos,vel=d.vel,klm=d.klm,kw=d.kw,kph=d.kph;
+   const L=d.L,R=d.R,st=R===L,end=d.len-3,kT=this.kT,kP=this.kP,touch=d.touch,cc=d.playing?0.0016:0.001,ls=d.ls,le=d.le,kL=d.kL,kR=d.kR,klOn=d.kl&&!touch?1:0;
+   let pos=d.pos,vel=d.vel,klm=d.klm,kw=d.kw,kph=d.kph,ext=d.ext||0,hvLeft=d.hvLeft||0;const hv=d.hv||0,tg0=d.target;
    for(let i=0;i<n;i++){
-    if(touch)vel+=((tgt-pos)*kP-vel)*kT;
+    if(touch){if(hvLeft>0){ext+=hv;hvLeft--}let tgt=tg0+ext;if(tgt<1)tgt=1;else if(tgt>end)tgt=end;vel+=((tgt-pos)*kP-vel)*kT}
     else if(d.brake>0){vel-=d.brake;if(vel<=0){vel=0;d.brake=0;d.playing=false;tw=0;this.port.postMessage({t:'ended',d:k})}}
     else{vel+=(tw-vel)*cc;if(vel-tw<1e-7&&tw-vel<1e-7)vel=tw}
     const ip=pos|0,f=pos-ip;let x0=L[ip-1],x1=L[ip],x2=L[ip+1],x3=L[ip+2];
@@ -961,7 +963,7 @@ class Decks extends AudioWorkletProcessor{
     if(le>0&&vel>0&&!touch&&pos>=le)pos-=le-ls;
     if(pos<1){pos=1;if(vel<0)vel=0}else if(pos>end){pos=end;if(vel>0)vel=0;if(d.playing){d.playing=false;tw=0;this.port.postMessage({t:'ended',d:k})}}
    }
-   d.pos=pos;d.vel=vel;d.klm=klm;d.kw=kw;d.kph=kph}
+   d.pos=pos;d.vel=vel;d.klm=klm;d.kw=kw;d.kph=kph;d.ext=ext;d.hvLeft=hvLeft}
   if((++this.n&1)===0){const p=[],v=[],e=[],s=[];for(const d of this.d){p.push(d.pos/d.sr);v.push(d.vel/d.srr);e.push(d.err);s.push(d.seq)}this.port.postMessage({t:'pos',p,v,e,s})}
   return true}}
 registerProcessor('platter-decks',Decks);
@@ -1005,7 +1007,7 @@ async function initAudio(){
   try{await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([WORKLET],{type:'application/javascript'})))}
   catch(e){await ctx.audioWorklet.addModule('data:application/javascript;charset=utf-8,'+encodeURIComponent(WORKLET))}
   node=new AudioWorkletNode(ctx,'platter-decks',{numberOfInputs:0,numberOfOutputs:4,outputChannelCount:[2,2,2,2]});
-  node.port.onmessage=onWorklet;
+  node.port.onmessage=onWorklet;node.port.postMessage({t:'feel',tight:LS.get('sl-feel','tight')==='tight'});
   const masterG=ctx.createGain(),lim=ctx.createDynamicsCompressor();
   lim.threshold.value=-2;lim.knee.value=0;lim.ratio.value=20;lim.attack.value=0.002;lim.release.value=0.12;masterG.connect(lim);
   const mainOut=ctx.createGain();lim.connect(mainOut);
@@ -1319,21 +1321,34 @@ $('micBtn').onclick=()=>{if(!stage.classList.contains('learning'))toggleMic()};
 
 /* ---------- jog wheels (touch + mouse) ---------- */
 function setupJog(s){
-  const c=$('jog'+s);let mode=null,lastA=0,lastT=0,d=null,acc=0,pid=null;
+  /* every finger on the record is tracked; the record turns by the weighted average of their turns (fingers far from the
+     centre count more), so a 3-finger grip is steadier than one finger. You stay on the record while any finger touches it. */
+  const c=$('jog'+s),ptrs=new Map(),hist=[];let mode=null,d=null,bendId=null,lastA=0,lastT=0,hv=0;
   const jogAng=d=>dispPos(d)/(SEC_PER_REV*d.sens)*Math.PI*2;
   const polar=e=>{const r=elRect(c),q=localPt(e.clientX,e.clientY),x=q.x-r.left-r.width/2,y=q.y-r.top-r.height/2;return{a:Math.atan2(y,x),r:Math.hypot(x,y)/(r.width/2)}};
-  c.addEventListener('pointerdown',e=>{if(stage.classList.contains('learning')||mode)return;d=sideDeck(s);if(!d.buf)return;const p=polar(e);if(p.r>1.02)return;ensureAudio();c.setPointerCapture(e.pointerId);pid=e.pointerId;e.preventDefault();
-    mode=(!d.playing||(d.vinyl&&p.r<0.8))?'scratch':'bend';lastA=p.a;lastT=e.timeStamp;d.omega=0;
-    if(mode==='scratch'){d.touching=true;d.rel=null;d.hand={a:p.a,off:jogAng(d)-p.a};post({t:'touch',d:d.k,on:true})}else{d.jogActive=true}c.style.cursor='grabbing'});
-  c.addEventListener('pointermove',e=>{if(!mode||e.pointerId!==pid)return;const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];acc=0;
-    for(const ev of(evs.length?evs:[e])){const p=polar(ev);let da=p.a-lastA;if(da>Math.PI)da-=2*Math.PI;else if(da<-Math.PI)da+=2*Math.PI;lastA=p.a;
-      const dt=Math.max(1,ev.timeStamp-lastT);lastT=ev.timeStamp;
-      if(mode==='scratch'){acc+=da/(2*Math.PI)*SEC_PER_REV*d.sens;if(d.hand)d.hand.a+=da}else{d.omega=d.omega*0.6+(da/dt*1000)*0.4}}
-    d.lastJog=performance.now();
-    if(mode==='scratch'){if(acc)post({t:'scratch',d:d.k,delta:acc});if(!node){d.pos=clamp(d.pos+acc,0,d.dur)}}
-    else{d.jogBend=clamp(d.omega/(2*Math.PI)*0.06*d.sens,-0.3,0.3);updateBend(d)}});
-  const end=e=>{if(!mode||e.pointerId!==pid)return;pid=null;if(mode==='scratch')tipFlags.scratch=true;if(mode==='scratch'){d.touching=false;if(d.hand){d.rel={diff:d.hand.a+d.hand.off-jogAng(d),t:performance.now()};d.hand=null}post({t:'touch',d:d.k,on:false})}d.jogActive=false;mode=null;c.style.cursor=''};
-  c.addEventListener('pointerup',end);c.addEventListener('pointercancel',end);
+  const wrap=da=>da>Math.PI?da-2*Math.PI:da<-Math.PI?da+2*Math.PI:da;
+  const weight=r=>clamp(r-0.12,0.05,1);
+  c.addEventListener('pointerdown',e=>{if(stage.classList.contains('learning')||mode==='bend')return;const dd=mode?d:sideDeck(s);if(!dd.buf)return;const p=polar(e);if(p.r>1.02)return;
+    ensureAudio();try{c.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();
+    if(!mode){d=dd;mode=(!d.playing||curView==='platters'||(d.vinyl&&p.r<0.8))?'scratch':'bend';d.omega=0;lastT=e.timeStamp;c.style.cursor='grabbing';
+      if(mode==='scratch'){d.touching=true;d.rel=null;d.hand={a:p.a,off:jogAng(d)-p.a};hist.length=0;hv=0;post({t:'touch',d:d.k,on:true})}
+      else{d.jogActive=true;bendId=e.pointerId;lastA=p.a;return}}
+    ptrs.set(e.pointerId,{a:p.a,w:weight(p.r)})});
+  c.addEventListener('pointermove',e=>{if(!mode)return;const evs=e.getCoalescedEvents?e.getCoalescedEvents():[],list=evs.length?evs:[e];
+    if(mode==='bend'){if(e.pointerId!==bendId)return;for(const ev of list){const p=polar(ev),da=wrap(p.a-lastA);lastA=p.a;const dt=Math.max(1,ev.timeStamp-lastT);lastT=ev.timeStamp;d.omega=d.omega*0.6+(da/dt*1000)*0.4}
+      d.lastJog=performance.now();d.jogBend=clamp(d.omega/(2*Math.PI)*0.06*d.sens,-0.3,0.3);updateBend(d);return}
+    const pt=ptrs.get(e.pointerId);if(!pt)return;let W=0;for(const q of ptrs.values())W+=q.w;let rot=0;
+    for(const ev of list){const p=polar(ev),da=wrap(p.a-pt.a);pt.a=p.a;pt.w=weight(p.r);rot+=da*pt.w/W}
+    d.lastJog=performance.now();if(!rot||!d.hand)return;d.hand.a+=rot;const acc=rot/(2*Math.PI)*SEC_PER_REV*d.sens;
+    /* hand speed over the last ~40 ms lets the audio engine predict the record between touch reports */
+    const t=e.timeStamp;hist.push({t,a:d.hand.a});while(hist.length>2&&t-hist[0].t>40)hist.shift();
+    const h0=hist[0];if(t-h0.t>=8)hv=(d.hand.a-h0.a)/(2*Math.PI)*SEC_PER_REV*d.sens/((t-h0.t)/1000);
+    post({t:'scratch',d:d.k,delta:acc,hv:clamp(hv,-8,8)});if(!node){d.pos=clamp(d.pos+acc,0,d.dur)}});
+  const end=e=>{if(!mode)return;
+    if(mode==='bend'){if(e.pointerId!==bendId)return;bendId=null;d.jogActive=false;mode=null;c.style.cursor='';return}
+    if(!ptrs.delete(e.pointerId)||ptrs.size)return;   /* still holding with other fingers */
+    tipFlags.scratch=true;d.touching=false;if(d.hand){d.rel={diff:d.hand.a+d.hand.off-jogAng(d),t:performance.now()};d.hand=null}post({t:'touch',d:d.k,on:false});mode=null;c.style.cursor=''};
+  c.addEventListener('pointerup',end);c.addEventListener('pointercancel',end);c.addEventListener('lostpointercapture',end);
   c.addEventListener('wheel',e=>{const d=sideDeck(s);if(!d.buf)return;e.preventDefault();jogTicks(s,e.deltaY*(e.deltaMode===1?16:1)*0.6,false)},{passive:false});
 }
 /* relative jog input from mouse wheel or a MIDI controller (rev = fraction of a turn) */
@@ -1615,6 +1630,7 @@ const midiCfg=Object.assign({ticks:512},LS.get('ph-midicfg',{}));
 let maps=LS.get('ph-midi',{});
 let midiAccess=null;
 const learn={on:false,target:null};
+$('scrFeel').value=LS.get('sl-feel','tight');$('scrFeel').onchange=e=>{LS.set('sl-feel',e.target.value);if(node)node.port.postMessage({t:'feel',tight:e.target.value==='tight'});toast(e.target.value==='tight'?'Scratch response: tight':'Scratch response: smooth (original)',1800)};
 $('jogTicks').value=midiCfg.ticks;$('jogTicksV').textContent=midiCfg.ticks;
 $('jogTicks').oninput=e=>{midiCfg.ticks=+e.target.value;$('jogTicksV').textContent=midiCfg.ticks;LS.set('ph-midicfg',midiCfg)};
 async function connectMidi(){if(midiAccess)return true;if(needPro('Using a MIDI controller')){closeSetup();return false}if(!navigator.requestMIDIAccess){toast('This browser has no Web MIDI. Use Chrome or Edge.',4000);return false}
@@ -1909,7 +1925,7 @@ addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;$('in
 $('installBtn').onclick=async()=>{if(!installEvt)return;installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;$('installBtn').hidden=true};
 addEventListener('appinstalled',()=>{$('installBtn').hidden=true;toast('SoundLab DJ is installed. Open it from your home screen.',4000)});
 /* updates: check for a new version on every launch and whenever the app comes back to the screen; load it straight away when nothing is playing */
-const APP_VER=16;try{$('verTxt').textContent='version '+APP_VER}catch(e){}
+const APP_VER=17;try{$('verTxt').textContent='version '+APP_VER}catch(e){}
 if(document.querySelector('link[rel=manifest]')&&'serviceWorker' in navigator){
   const hadSW=!!navigator.serviceWorker.controller;let reloading=false;
   navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{
