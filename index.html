@@ -265,6 +265,8 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 .crate-tools button{background:transparent;border:1px solid var(--edge-hi);border-radius:999px;font-size:12px;padding:3px 10px;color:var(--muted)}
 .crate-tools button.warn{border-color:var(--rec);color:var(--rec)}
 .lib td.acts{white-space:nowrap}
+.pv,.ld .pv{--kc:var(--go);border-radius:999px;border:1.5px solid var(--go);background:transparent;color:var(--go);font-weight:700;font-size:13px;padding:4px 12px;margin-right:6px;white-space:nowrap}
+.pv.on,.ld .pv.on{background:var(--go);color:var(--screen)}
 .addpl{background:transparent;border:1px solid var(--edge-hi);border-radius:999px;color:var(--ink);font-size:15px;line-height:1;padding:4px 9px;margin-right:4px}
 .addpl:hover{border-color:var(--go);color:var(--go)}
 .cdots{color:var(--a);letter-spacing:1px;font-size:11px}
@@ -869,8 +871,13 @@ function applyFx(k){const d=decks[k],f=d.fx;if(!G)return;const n=G.ch[k],t=ctx.c
 /* the slice is grabbed once when Stutter engages; turning the knob afterwards only changes how much of it repeats */
 function startRoll(d){if(!d.buf)return;const bpm=d.bpm||effBpm(d),sl=60/bpm*fxInfo(d).b;
   if(d.roll){if(Math.abs(d.roll.e-d.roll.s-sl)<1e-4)return;d.roll.e=d.roll.s+sl;post({t:'loop',d:d.k,on:true,s:d.roll.s,e:d.roll.e});return}
-  const p=dispPos(d),s=d.bpm?d.first+Math.floor((p-d.first)/sl)*sl:p;   /* songs snap to the beat grid; vocals start right where they are */
-  d.roll={flux:d.flux,s,e:s+sl};if(!d.flux)post({t:'flux',d:d.k,on:true});post({t:'loop',d:d.k,on:true,s,e:s+sl})}
+  let p=dispPos(d);const stopped=!d.playing||p>=d.dur-0.05;
+  if(stopped&&d.k>=2&&p>=d.dur-0.05)p=d.cue<d.dur-0.1?d.cue:0;   /* Deck C/D: a finished vocal stutters from its start */
+  let s=d.bpm?d.first+Math.floor((p-d.first)/sl)*sl:p;   /* songs snap to the beat grid; vocals start right where they are */
+  s=Math.max(0,Math.min(s,d.dur-sl-0.02));                /* keep the whole slice inside the recording */
+  d.roll={flux:d.flux,s,e:s+sl};if(!d.flux)post({t:'flux',d:d.k,on:true});
+  if(stopped&&d.k>=2){seek(d,s);d.playing=true;post({t:'play',d:d.k,on:true});refreshAll()}
+  post({t:'loop',d:d.k,on:true,s,e:s+sl})}
 function stopRoll(d){if(!d.roll)return;const r=d.roll;d.roll=null;postLoop(d);if(!r.flux)setTimeout(()=>post({t:'flux',d:d.k,on:false}),40)}
 
 /* ---------- output routing: main, headphone cue, split cue, 4-channel ---------- */
@@ -1478,7 +1485,15 @@ async function runAnalysis(){anBusy=true;while(anQ.length){const t=anQ.shift();i
   catch(e){t.bad=true;renderLib()}
   await new Promise(r=>setTimeout(r,30))}anBusy=false}
 function openLib(k){closeSetup();lib.target=k;$('lib').classList.add('open');$('libTgt').textContent=k!=null?`Loading to deck ${LET[k]}`:'';renderLib()}
-function closeLib(){$('lib').classList.remove('open')}
+function closeLib(){$('lib').classList.remove('open');stopPreview()}
+/* listen back to a recorded mix or vocal from the Library */
+const prev={src:null,key:null};
+function stopPreview(){if(prev.src){const s=prev.src;prev.src=null;prev.key=null;try{s.stop()}catch(e){}if($('lib').classList.contains('open'))renderLib()}}
+async function togglePreview(key,getBytes){if(prev.key===key){stopPreview();return}stopPreview();
+  try{await ensureAudio();const ab=await ctx.decodeAudioData(await getBytes());const s=ctx.createBufferSource(),g=ctx.createGain();g.gain.value=0.9;s.buffer=ab;s.connect(g);g.connect(G.mainOut);
+    s.onended=()=>{if(prev.src===s){prev.src=null;prev.key=null;renderLib()}};s.start();prev.src=s;prev.key=key;renderLib()}
+  catch(e){toast(`Could not play this recording (${e&&e.name||'error'})`,4000)}}
+const pvBtn=key=>`<button class="pv${prev.key===key?' on':''}" aria-label="${prev.key===key?'Stop':'Play'}">${prev.key===key?'■ Stop':'▶ Play'}</button>`;
 $('libBtn').onclick=()=>$('lib').classList.contains('open')?closeLib():openLib(null);
 $('libClose').onclick=closeLib;
 $('addFiles').onchange=e=>{importFiles([...e.target.files]);e.target.value=''};
@@ -1533,8 +1548,8 @@ function renderLib(){
   const c=lib.crates.find(x=>x.id===lib.sel);
   if(lib.sel==='mixes'){const tb=$('libRows');tb.innerHTML='';
     if(!takes.length){tb.innerHTML=`<tr><td colspan="9" style="color:var(--muted);padding:24px 8px">No recordings yet. Press REC in the top bar to record your mix. It appears here, ready to save.</td></tr>`;return}
-    takes.forEach((t,i)=>{const tr=document.createElement('tr');tr.innerHTML=`<td></td><td class="mono">${i+1}</td><td></td><td>Recorded mix</td><td class="mono">${(t.blob.size/1048576).toFixed(1)} MB</td><td class="mono">${fmtD(t.dur)}</td><td></td><td><div class="ld"><button style="--kc:var(--go)">Save</button></div></td><td></td>`;
-      tr.children[2].textContent=t.name.replace(/\.(webm|mp4)$/,'');tr.querySelector('button').onclick=()=>saveTake(t);tb.appendChild(tr)});return}
+    takes.forEach((t,i)=>{const tr=document.createElement('tr');tr.innerHTML=`<td></td><td class="mono">${i+1}</td><td></td><td>Recorded mix</td><td class="mono">${(t.blob.size/1048576).toFixed(1)} MB</td><td class="mono">${fmtD(t.dur)}</td><td></td><td><div class="ld">${pvBtn('mix'+i)}<button class="sv" style="--kc:var(--go)">Save</button></div></td><td></td>`;
+      tr.children[2].textContent=t.name.replace(/\.(webm|mp4)$/,'');tr.querySelector('.sv').onclick=()=>saveTake(t);tr.querySelector('.pv').onclick=()=>togglePreview('mix'+i,()=>t.blob.arrayBuffer());tb.appendChild(tr)});return}
   let rows=lib.sel==='all'?lib.tracks.filter(t=>t.demo==null):lib.tracks.filter(t=>t.crates.includes(lib.sel));
   if(c&&c.order)rows=c.order.map(id=>rows.find(t=>t.id===id)).filter(Boolean);
   if(lib.q)rows=rows.filter(t=>(t.name+' '+t.artist).toLowerCase().includes(lib.q));
@@ -1542,7 +1557,7 @@ function renderLib(){
   const tb=$('libRows');tb.innerHTML='';
   if(!rows.length){tb.innerHTML=`<tr><td colspan="9" style="color:var(--muted);padding:24px 8px">${lib.sel==='all'?'No tracks yet. Use Add tracks to bring in music from this device or a cloud drive.':lib.sel==='vocals'&&!lib.q?'No vocals yet. On the Deck C or D tab, tap SAMPLER, switch it to FROM MIC, then IN and OUT to record.':ownCrate&&!lib.q?'This playlist is empty. Tap ＋ next to any song to add it here.':'Nothing matches.'}</td></tr>`;return}
   rows.forEach((t,i)=>{const tr=document.createElement('tr');
-    tr.innerHTML=`<td class="grip" title="Drag onto a deck" aria-label="Drag onto a deck">⋮⋮</td><td class="mono">${i+1}</td><td></td><td></td><td class="mono">${t.bad?'error':t.bpm?t.bpm.toFixed(2):'…'}</td><td class="mono">${t.dur?fmtD(t.dur):'…'}</td><td class="mono cues">${cueCount(t)}</td><td><div class="ld">${LET.map((L,k)=>`<button data-k="${k}" style="--kc:${DC[k]}" aria-label="Load to deck ${L}">${L}</button>`).join('')}</div></td><td class="acts"><button class="addpl" aria-label="Add to a playlist" title="Add to a playlist">＋</button>${ownCrate||t.demo==null?`<button class="rm" aria-label="${ownCrate?'Remove from this playlist':'Remove from library'}" title="${ownCrate?'Remove from this playlist':'Remove from library'}">×</button>`:''}</td>`;
+    tr.innerHTML=`<td class="grip" title="Drag onto a deck" aria-label="Drag onto a deck">⋮⋮</td><td class="mono">${i+1}</td><td></td><td></td><td class="mono">${t.bad?'error':t.bpm?t.bpm.toFixed(2):'…'}</td><td class="mono">${t.dur?fmtD(t.dur):'…'}</td><td class="mono cues">${cueCount(t)}</td><td><div class="ld">${LET.map((L,k)=>`<button data-k="${k}" style="--kc:${DC[k]}" aria-label="Load to deck ${L}">${L}</button>`).join('')}</div></td><td class="acts">${t.crates.includes('vocals')?pvBtn('trk'+t.id):''}<button class="addpl" aria-label="Add to a playlist" title="Add to a playlist">＋</button>${ownCrate||t.demo==null?`<button class="rm" aria-label="${ownCrate?'Remove from this playlist':'Remove from library'}" title="${ownCrate?'Remove from this playlist':'Remove from library'}">×</button>`:''}</td>`;
     tr.children[2].textContent=t.name;tr.children[3].textContent=t.artist;
     tr.firstChild.addEventListener('pointerdown',e=>startRowDrag(e,t));
     tr.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'||e.button>0||e.target.closest('button,.grip'))return;const sx=e.clientX,sy=e.clientY;
@@ -1551,6 +1566,7 @@ function renderLib(){
     tr.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{loadTrack(+b.dataset.k,t);closeLib()});
     tr.ondblclick=()=>{loadTrack(lib.target!=null?lib.target:view.L,t);closeLib()};
     tr.querySelector('.addpl').onclick=e=>{e.stopPropagation();addToMenu(e.currentTarget,t)};
+    const pv=tr.querySelector('.pv');if(pv)pv.onclick=e=>{e.stopPropagation();togglePreview('trk'+t.id,()=>trackBytes(t))};
     const rm=tr.querySelector('.rm');if(rm)rm.onclick=e=>{e.stopPropagation();
       if(ownCrate){removeFromCrate(t,lib.sel);return}
       lib.tracks=lib.tracks.filter(x=>x!==t);IDB.del('tracks',t.id);renderLib()};
