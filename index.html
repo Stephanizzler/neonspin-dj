@@ -398,6 +398,18 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 .les-stars{font-size:38px;letter-spacing:6px;color:var(--pfl);text-align:center;line-height:1.1}
 .les-res p{text-align:center;font-size:14px !important;color:var(--muted) !important}
 .les-next{background:var(--go);color:var(--screen);border-color:var(--go)}
+/* auto crossfader for scratching (Platters view only) */
+.xlock{display:none}
+#stage.v-plat .xlock{display:flex;grid-row:1;align-self:end;flex-direction:column;gap:8px;background:var(--well);border:1px solid var(--edge);border-radius:14px;padding:10px;margin-bottom:2px}
+.xlock .lbl{text-align:center}
+.xl-row{display:flex;gap:6px}
+.xl-row button{flex:1;border-radius:11px;border:1.5px solid var(--edge-hi);background:var(--panel-2);font-weight:800;font-size:14px;letter-spacing:.06em;padding:12px 0;color:var(--muted)}
+.xl-row button[data-xl=A].on{background:var(--a);border-color:var(--a);color:var(--screen)}
+.xl-row button[data-xl=B].on{background:var(--b);border-color:var(--b);color:var(--screen)}
+.xl-mode button{font-size:11.5px;padding:9px 0}
+.xl-mode button.on{color:var(--ink);border-color:var(--ink)}
+.xlock p{margin:0;font-size:12px;line-height:1.35;color:var(--muted);text-align:center}
+#stage.v-plat.short .xlock p{display:none}
 .led{width:8px;height:8px;border-radius:50%;background:#2a2540;display:inline-block}
 .led.on{background:var(--rec);box-shadow:0 0 6px var(--rec)}
 
@@ -589,6 +601,12 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
           <div class="curve"><button id="cvS" class="on">BLEND</button><button id="cvC">CUT</button></div>
         </div>
         <div class="mx-ch" id="mxR"><div class="mx-head" id="mxhR">B</div><div class="knobs" id="kbR"></div><button class="pfl" data-pfl="R" data-mid="R:pfl">CUE</button><div class="mx-fd"><div class="chf" id="cfR"></div><canvas class="vu" id="vuR"></canvas></div></div>
+        <div class="xlock" id="xlock" role="group" aria-label="Scratch crossfader">
+          <span class="lbl">Auto crossfader</span>
+          <div class="xl-row"><button data-xl="A" aria-pressed="false">LOCK A</button><button data-xl="B" aria-pressed="false">LOCK B</button></div>
+          <div class="xl-row xl-mode"><button data-xm="fwd" class="on">FORWARD</button><button data-xm="trans">TRANSFORM</button></div>
+          <p id="xlHint">Lock to the beat deck, then scratch the other one: the crossfader cuts in and out for you.</p>
+        </div>
         <div class="mx-xf"><span class="xl" id="xlL" style="background:var(--a)">A</span><div id="xfader"></div><span class="xl" id="xlR" style="background:var(--b)">B</span></div>
       </div>
       <div id="deckR"></div>
@@ -1678,10 +1696,26 @@ async function togglePreview(key,getBytes){if(prev.key===key){stopPreview();retu
     s.onended=()=>{if(prev.src===s){prev.src=null;prev.key=null;renderLib()}};s.start();prev.src=s;prev.key=key;renderLib()}
   catch(e){toast(`Could not play this recording (${e&&e.name||'error'})`,4000)}}
 const pvBtn=key=>`<button class="pv${prev.key===key?' on':''}" aria-label="${prev.key===key?'Stop':'Play'}">${prev.key===key?'■ Stop':'▶ Play'}</button>`;
+/* ---------- auto crossfader: locked to the beat deck, it opens to the scratch deck only while you scratch ---------- */
+const XL={home:null,mode:'fwd',lastA:null,v:0,cur:null};
+function setXLock(h){XL.home=XL.home===h?null:h;XL.lastA=null;XL.v=0;XL.cur=null;if(XL.home)xfader.set(XL.home==='A'?-1:1);renderXLock()}
+function renderXLock(){document.querySelectorAll('#xlock [data-xl]').forEach(b=>{const on=b.dataset.xl===XL.home;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});
+  document.querySelectorAll('#xlock [data-xm]').forEach(b=>b.classList.toggle('on',b.dataset.xm===XL.mode));
+  $('xlHint').textContent=XL.home?`Scratch Deck ${XL.home==='A'?'B':'A'}: the crossfader ${XL.mode==='fwd'?'opens only while you push the record forward':'chops your scratch in time with the beat'}. Touch the crossfader to unlock.`:'Lock to the beat deck, then scratch the other one: the crossfader cuts in and out for you.'}
+function xlockFrame(){if(!XL.home)return;const home=XL.home==='A'?-1:1,H=decks[XL.home==='A'?0:1],S=decks[XL.home==='A'?1:0];let open=false;
+  if(S.hand){const a=S.hand.a;if(XL.lastA!=null)XL.v=XL.v*0.45+(a-XL.lastA)*0.55;XL.lastA=a;const moving=Math.abs(XL.v)>0.004;
+    if(XL.mode==='fwd')open=XL.v>0.004;
+    else if(moving){let ph;if(H.playing&&H.bpm)ph=((dispPos(H)-H.first)*H.bpm/60*2)%1;else ph=(performance.now()/1000*8)%1;open=(ph+1)%1<0.5}}
+  else{XL.lastA=null;XL.v=0}
+  if(open!==XL.cur){XL.cur=open;xfader.set(open?-home:home)}}
+document.querySelectorAll('#xlock [data-xl]').forEach(b=>b.onclick=()=>setXLock(b.dataset.xl));
+document.querySelectorAll('#xlock [data-xm]').forEach(b=>b.onclick=()=>{XL.mode=b.dataset.xm;renderXLock()});
+$('xfader').addEventListener('pointerdown',()=>{if(XL.home){XL.home=null;renderXLock();toast('Auto crossfader off',1500)}},true);
+renderXLock();
 /* ---------- views: Console, Mixer, Platters ---------- */
 const VIEWS={console:'Console',mixer:'Mixer',platters:'Platters',cd:'Decks C/D',sampler:'Sampler'};var curView='console';
 function setView(v,quiet){if(!VIEWS[v])v='console';if((v==='cd'||v==='sampler')&&!quiet&&needPro('Decks C/D and the sampler'))return;
-  curView=v;const st=$('stage');st.classList.toggle('v-mixer',v==='mixer');st.classList.toggle('v-plat',v==='platters');st.classList.toggle('v-cd',v==='cd');st.classList.toggle('v-samp',v==='sampler');
+  if(v!=='platters'&&XL.home){XL.home=null;renderXLock()}curView=v;const st=$('stage');st.classList.toggle('v-mixer',v==='mixer');st.classList.toggle('v-plat',v==='platters');st.classList.toggle('v-cd',v==='cd');st.classList.toggle('v-samp',v==='sampler');
   if(v==='cd'||v==='sampler'){for(const k of[2,3])decks[k].xmode=v==='cd'?'track':'pads';refreshAll()}
   $('viewName').textContent=VIEWS[v];document.querySelectorAll('#viewPop [data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
   LS.set('sl-view',v);closeViewPop();layout();try{renderTip()}catch(e){}requestAnimationFrame(layout);
@@ -1817,7 +1851,7 @@ function frame(now){
     $('limLed').classList.toggle('on',G.lim.reduction<-1.5);
     if(now-lastFx>150){lastFx=now;decks.forEach(d=>{if(d.fx.on&&(d.fx.type==='DELAY'||d.fx.type==='FLANGER'))applyFx(d.k)})}}
   else{['vuL','vuR','vuML','vuMR'].forEach(id=>drawVU(id,0))}
-  lesFrame();
+  lesFrame();xlockFrame();
   if(now-lastTxt>70){lastTxt=now;refreshText();tipTick();lesTick();
     for(const s of['L','R']){const d=sideDeck(s);$('dk'+s).querySelector('[data-a=cue]').classList.toggle('on',!d.playing&&!!d.buf&&Math.abs(dispPos(d)-d.cue)<0.03)}}
   requestAnimationFrame(frame)}
@@ -1835,7 +1869,7 @@ addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;$('in
 $('installBtn').onclick=async()=>{if(!installEvt)return;installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;$('installBtn').hidden=true};
 addEventListener('appinstalled',()=>{$('installBtn').hidden=true;toast('SoundLab DJ is installed. Open it from your home screen.',4000)});
 /* updates: check for a new version on every launch and whenever the app comes back to the screen; load it straight away when nothing is playing */
-const APP_VER=14;try{$('verTxt').textContent='version '+APP_VER}catch(e){}
+const APP_VER=15;try{$('verTxt').textContent='version '+APP_VER}catch(e){}
 if(document.querySelector('link[rel=manifest]')&&'serviceWorker' in navigator){
   const hadSW=!!navigator.serviceWorker.controller;let reloading=false;
   navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{
