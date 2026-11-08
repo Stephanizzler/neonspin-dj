@@ -941,7 +941,7 @@ async function loadTrack(k,tr){
   try{
     let buf;
     if(tr.demo!=null){buf=await demoBuf(tr.demo)}
-    else{await ensureAudio();toast('Loading '+tr.name+'…',9000);const ad=await ctx.decodeAudioData(await tr.blob.arrayBuffer());buf={L:ad.getChannelData(0),R:ad.numberOfChannels>1?ad.getChannelData(1):ad.getChannelData(0),sr:ad.sampleRate}}
+    else{await ensureAudio();toast('Loading '+tr.name+'…',9000);const ad=await ctx.decodeAudioData(await trackBytes(tr));buf={L:ad.getChannelData(0),R:ad.numberOfChannels>1?ad.getChannelData(1):ad.getChannelData(0),sr:ad.sampleRate}}
     if(d.playing){d.playing=false;post({t:'play',d:k,on:false})}
     const an=analyze(buf),pr=tr.prep;if(pr&&pr.bpm){an.bpm=pr.bpm;an.first=pr.first}
     if(!d.sync){d.fader=0}   /* a new song starts at its own tempo */
@@ -949,9 +949,10 @@ async function loadTrack(k,tr){
     if(d.sync&&!d.bpm){d.sync=false;post({t:'sync',d:k,on:false})}
     setTempo(d);sendLoad(d);if(an.first>0.001)seek(d,an.first);
     if(tr.id&&tr.demo==null&&(!tr.bpm||tr.bpm!==an.bpm)){tr.bpm=an.bpm;tr.dur=d.dur;saveTrack(tr);renderLib()}
+    if(k>=2){d.xmode='track';panelOf[k===2?'L':'R']='xd'}
     const nc=d.hot.filter(v=>v!=null).length;toast(`${tr.name} → Deck ${d.letter}${nc?` · ${nc} saved cue${nc>1?'s':''}`:''}`);
     refreshAll();
-  }catch(e){toast('Could not open '+tr.name+'. The file may be damaged or in a format this browser cannot play.',5000)}
+  }catch(e){console.error(e);toast(`Could not open ${tr.name}. ${/no audio|NotReadable|WebKitBlob|NotFound/i.test(String(e&&(e.name+e.message)))?'Its saved audio could not be read on this device; record or add it again.':'The file may be damaged or in a format this browser cannot play.'} (${e&&e.name||'error'})`,6500)}
 }
 function audible(k){if(k>=2)return true;const[gl,gr]=xfGains();return(k%2===0?gl:gr)>0.05}
 
@@ -1441,7 +1442,10 @@ const IDB={db:null,
   async open(){try{this.db=await new Promise((res,rej)=>{const r=indexedDB.open('platterhouse',1);r.onupgradeneeded=()=>{const d=r.result;d.createObjectStore('tracks',{keyPath:'id'});d.createObjectStore('crates',{keyPath:'id'})};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}catch(e){this.db=null}},
   run(store,mode,fn){if(!this.db)return Promise.resolve(null);return new Promise(res=>{try{const t=this.db.transaction(store,mode),q=fn(t.objectStore(store));t.oncomplete=()=>res(q&&q.result);t.onerror=t.onabort=()=>res(null)}catch(e){res(null)}})},
   put(s,v){return this.run(s,'readwrite',st=>st.put(v))},del(s,id){return this.run(s,'readwrite',st=>st.delete(id))},all(s){return this.run(s,'readonly',st=>st.getAll())}};
-function saveTrack(t){if(t.demo!=null){LS.set('sl-demo-'+t.demo,{crates:t.crates,prep:t.prep||null});return}IDB.put('tracks',{id:t.id,name:t.name,artist:t.artist,file:t.file,bpm:t.bpm||0,dur:t.dur||0,crates:t.crates,prep:t.prep||null,blob:t.blob})}
+async function trackBytes(t){if(t.data)return t.data.slice(0);if(t.blob){const ab=await t.blob.arrayBuffer();t.data=ab.slice(0);return ab}throw new Error('no audio stored')}
+function saveTrack(t){if(t.demo!=null){LS.set('sl-demo-'+t.demo,{crates:t.crates,prep:t.prep||null});return}const rec=data=>IDB.put('tracks',{id:t.id,name:t.name,artist:t.artist,file:t.file,bpm:t.bpm||0,dur:t.dur||0,crates:t.crates,prep:t.prep||null,data});
+  /* store raw bytes, not a Blob: iPhones can lose access to stored Blobs after the app is reopened */
+  if(t.data)rec(t.data);else if(t.blob)t.blob.arrayBuffer().then(ab=>{t.data=ab;rec(ab)}).catch(()=>{})}
 const AUDIO_EXT=/\.(mp3|m4a|aac|wav|wave|aif|aiff|flac|ogg|oga|opus|webm|mp4)$/i;
 function parseName(fn){const base=fn.replace(/\.[^.]+$/,'').replace(/_/g,' ');const m=base.split(' - ');return m.length>1?{artist:m[0].trim(),name:m.slice(1).join(' - ').trim()}:{artist:'',name:base.trim()}}
 async function importFiles(files,opt={}){
@@ -1469,7 +1473,7 @@ async function importFiles(files,opt={}){
 let anQ=[],anBusy=false;
 function queueAnalysis(ts){anQ.push(...ts);if(!anBusy)runAnalysis()}
 async function runAnalysis(){anBusy=true;while(anQ.length){const t=anQ.shift();if(t.bpm&&t.dur)continue;
-  try{const OC=window.OfflineAudioContext||window.webkitOfflineAudioContext;const oc=new OC(2,44100,44100);const ad=await oc.decodeAudioData(await t.blob.arrayBuffer());
+  try{const OC=window.OfflineAudioContext||window.webkitOfflineAudioContext;const oc=new OC(2,44100,44100);const ad=await oc.decodeAudioData(await trackBytes(t));
     const buf={L:ad.getChannelData(0),R:ad.numberOfChannels>1?ad.getChannelData(1):ad.getChannelData(0),sr:ad.sampleRate};const an=analyze(buf);t.bpm=an.bpm;t.dur=ad.duration;saveTrack(t);renderLib()}
   catch(e){t.bad=true;renderLib()}
   await new Promise(r=>setTimeout(r,30))}anBusy=false}
@@ -1573,7 +1577,7 @@ function maybeHomeTip(){const inApp=matchMedia('(display-mode: fullscreen), (dis
   if(Date.now()-LS.get('ns-hometip',0)<3*864e5)return;$('homeTip').hidden=false}
 $('homeTipOk').onclick=()=>{$('homeTip').hidden=true;LS.set('ns-hometip',Date.now())};
 async function restoreLib(){await IDB.open();const cs=await IDB.all('crates')||[];const ts=await IDB.all('tracks')||[];
-  cs.forEach(c=>{if(!lib.crates.find(x=>x.id===c.id))lib.crates.push(c)});ts.forEach(t=>{if(t.blob)lib.tracks.push(t)});renderLib();if(ts.length){protectStorage();setTimeout(maybeHomeTip,4000)}queueAnalysis(ts.filter(t=>!t.bpm))}
+  cs.forEach(c=>{if(!lib.crates.find(x=>x.id===c.id))lib.crates.push(c)});ts.forEach(t=>{if(t.data||t.blob){lib.tracks.push(t);if(!t.data&&t.blob)saveTrack(t)}});renderLib();if(ts.length){protectStorage();setTimeout(maybeHomeTip,4000)}queueAnalysis(ts.filter(t=>!t.bpm))}
 
 /* ---------- keyboard ---------- */
 const held={};
