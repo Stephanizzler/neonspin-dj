@@ -559,7 +559,7 @@ const LET=['A','B','C','D'];
 const HOTC=['#ff5c7a','#3dd6ff','#2fe39a','#ffd23f'];
 const fmtT=t=>{t=Math.max(0,t);const m=Math.floor(t/60),s=t-m*60;return m+':'+(s<10?'0':'')+s.toFixed(1)};
 const fmtD=t=>{t=Math.max(0,Math.round(t));return Math.floor(t/60)+':'+String(t%60).padStart(2,'0')};
-const fmtBeats=b=>b>=1?String(b):b===0.5?'½':b===0.25?'¼':b===0.375?'⅜':b===0.75?'¾':b===0.125?'⅛':String(b);
+const fmtBeats=b=>b>=1?String(b):b===0.5?'½':b===0.25?'¼':b===0.375?'⅜':b===0.75?'¾':b===0.125?'⅛':b===0.0625?'1/16':String(b);
 function toast(msg,ms=2600){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('show'),ms)}
 function fit(c){const dpr=Math.min(2,window.devicePixelRatio||1)*stageScale*CAM.z;const w=Math.max(1,Math.round(c.clientWidth*dpr)),h=Math.max(1,Math.round(c.clientHeight*dpr));if(c.width!==w||c.height!==h){c.width=w;c.height=h}return[w,h]}
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
@@ -760,7 +760,7 @@ registerProcessor('platter-capture',Capture);`;
 const FX_TYPES=['DELAY','FLANGER','STUTTER','HPF','LPF'];
 const FX_NAME={DELAY:'Delay',FLANGER:'Flanger',STUTTER:'Stutter',HPF:'High-pass',LPF:'Low-pass'};
 const FX_P={DELAY:['TIME','FDBK'],FLANGER:['RATE','DEPTH'],STUTTER:['RATE',null],HPF:['FREQ','RES'],LPF:['FREQ','RES']};
-const ECHO_BEATS=[1/8,1/4,3/8,1/2,3/4,1,2],FL_BEATS=[1,2,4,8,16],ST_BEATS=[1/2,1/4,1/8,1/16];
+const ECHO_BEATS=[1/8,1/4,3/8,1/2,3/4,1,2],FL_BEATS=[1,2,4,8,16],ST_BEATS=[1,1/2,1/4,1/8,1/16];
 const decks=[0,1,2,3].map(k=>({k,letter:LET[k],color:DC[k],name:'',artist:'',buf:null,peaks:null,bpm:0,first:0,fader:0,range:0.08,playing:false,cue:0,hot:[null,null,null,null],loop:null,loopIn:null,lsize:4,
   sync:k>=2,vinyl:true,xmode:'track',sSrc:'deck',slots:[null,null,null,null],slotNext:0,sv:[],sIn:null,sFrom:0,sens:1,keylock:false,rev:false,flux:false,roll:null,
   pos:0,v:0,recv:0,seq:0,err:0,touching:false,jogBend:0,btnBend:0,wheelBend:0,sentBend:0,omega:0,lastJog:0,dur:0,
@@ -866,8 +866,11 @@ function applyFx(k){const d=decks[k],f=d.fx;if(!G)return;const n=G.ch[k],t=ctx.c
   if(f.type==='FLANGER'&&x.osc){x.osc.frequency.setTargetAtTime(1/(info.b*bl),t,0.05);x.dep.gain.setTargetAtTime(0.0008+0.0032*f.p2,t,0.02);x.fb.gain.setTargetAtTime(0.25+0.55*f.p2,t,0.02)}
   if(filt&&x.fl){x.fl.frequency.setTargetAtTime(fxHz(f),t,0.015);x.fl.Q.setTargetAtTime(0.7+f.p2*11,t,0.02)}}
 /* Stutter: repeat a short beat-locked slice; slip keeps the track running underneath so it lands back in time */
-function startRoll(d){if(!d.buf)return;const bpm=d.bpm||effBpm(d),first=d.bpm?d.first:0,sl=60/bpm*fxInfo(d).b,p=dispPos(d),s=first+Math.floor((p-first)/sl)*sl;
-  if(!d.roll)d.roll={flux:d.flux};d.roll.s=s;d.roll.e=s+sl;if(!d.roll.flux)post({t:'flux',d:d.k,on:true});post({t:'loop',d:d.k,on:true,s,e:s+sl})}
+/* the slice is grabbed once when Stutter engages; turning the knob afterwards only changes how much of it repeats */
+function startRoll(d){if(!d.buf)return;const bpm=d.bpm||effBpm(d),sl=60/bpm*fxInfo(d).b;
+  if(d.roll){if(Math.abs(d.roll.e-d.roll.s-sl)<1e-4)return;d.roll.e=d.roll.s+sl;post({t:'loop',d:d.k,on:true,s:d.roll.s,e:d.roll.e});return}
+  const p=dispPos(d),s=d.bpm?d.first+Math.floor((p-d.first)/sl)*sl:p;   /* songs snap to the beat grid; vocals start right where they are */
+  d.roll={flux:d.flux,s,e:s+sl};if(!d.flux)post({t:'flux',d:d.k,on:true});post({t:'loop',d:d.k,on:true,s,e:s+sl})}
 function stopRoll(d){if(!d.roll)return;const r=d.roll;d.roll=null;postLoop(d);if(!r.flux)setTimeout(()=>post({t:'flux',d:d.k,on:false}),40)}
 
 /* ---------- output routing: main, headphone cue, split cue, 4-channel ---------- */
