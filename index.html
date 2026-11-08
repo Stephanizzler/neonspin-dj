@@ -1983,7 +1983,7 @@ addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;$('in
 $('installBtn').onclick=async()=>{if(!installEvt)return;installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;$('installBtn').hidden=true};
 addEventListener('appinstalled',()=>{$('installBtn').hidden=true;toast('SoundLab DJ is installed. Open it from your home screen.',4000)});
 /* updates: check for a new version on every launch and whenever the app comes back to the screen; load it straight away when nothing is playing */
-const APP_VER=18;try{$('verTxt').textContent='version '+APP_VER}catch(e){}
+const APP_VER=19;try{$('verTxt').textContent='version '+APP_VER}catch(e){}
 if(document.querySelector('link[rel=manifest]')&&'serviceWorker' in navigator){
   const hadSW=!!navigator.serviceWorker.controller;let reloading=false;
   navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{
@@ -2050,42 +2050,73 @@ async function demoPrepare(){if(SCR.battle)setBattle(false);SCR.auto='off';
   setMaster(0);for(const s of['L','R']){for(const k in ui[s].kn)ui[s].kn[k].set(0);ui[s].cf.set(0.8)}
   ui.R.xg.set(0);xfader.set(-1);mix.curve='blend';applyXf();panelOf.L=panelOf.R='cues';refreshAll()}
 async function runDemo(){
-  const A=decks[0],B=decks[1],Dd=decks[3],T=18;let n=0;
+  const A=decks[0],B=decks[1],Dd=decks[3],T=27;let n=0;
   await scene(n++,T,null,'Welcome to <b>SoundLab DJ</b>. Here\'s a real mix, one feature at a time.',()=>dwait(2600));
-  await scene(n++,T,['#dkL .tcol','#jogL'],'<b>PLAY</b> starts Deck A. The platter spins, and its outer ring shows how far through the track you are.',async()=>{press('#dkL [data-a=play]');togglePlay(A);await dwait(3800)});
-  await scene(n++,T,'#strips','The waveforms show the beats coming up. The <b>Beats</b> bar compares Deck A and Deck B.',()=>dwait(3800));
-  await scene(n++,T,['#dkR .tcol','#dkR .tempo'],'<b>SYNC</b> matches Deck B to Deck A\'s tempo: 126 becomes 124 BPM.',async()=>{press('#dkR [data-a=sync]');toggleSync(B);await dwait(3400)});
-  await scene(n++,T,['#dkR .tcol','#strips'],'<b>PLAY</b> on Deck B starts it right on the beat. The Beats bar turns green: locked. The crossfader keeps it silent for now.',async()=>{press('#dkR [data-a=play]');togglePlay(B);await dwait(4600)});
-  await scene(n++,T,'#mxR','Turn Deck B\'s <b>LOW</b> knob down, so two basslines won\'t clash.',async()=>{press('[data-mid="R:kn:lo"]');await tween(v=>ui.R.kn.lo.set(v),0,-1,1500);await dwait(1200)});
-  await scene(n++,T,'.mx-xf','Slide the <b>crossfader</b> to bring Deck B into the mix.',async()=>{await tween(v=>xfader.set(v),-1,0,3200);await dwait(800)});
-  await scene(n++,T,['#mxL','#mxR'],'Swap the bass: Deck A\'s <b>LOW</b> goes down while Deck B\'s comes back up.',async()=>{press('[data-mid="L:kn:lo"]');await Promise.all([tween(v=>ui.L.kn.lo.set(v),0,-1,2600),tween(v=>ui.R.kn.lo.set(v),-1,0,2600)]);await dwait(800)});
-  await scene(n++,T,'.mx-xf','Finish the mix: crossfader across, and Deck B plays on its own.',async()=>{await tween(v=>xfader.set(v),0,1,2400);press('#dkL [data-a=play]');togglePlay(A);ui.L.kn.lo.set(0);await dwait(800)});
-  await scene(n++,T,['#dkR .jogbox'],'<b>Scratch</b>: hold the middle of the platter and rock it back and forth, in time with the beat.',async()=>{press('#jogR');await demoScratch(B,()=>cap('Add quick <b>crossfader</b> cuts while you scratch: that\'s a <b>transformer</b> scratch.'));await dwait(1200)});
-  await scene(n++,T,['#dkR .ptabs','#dkR .panel'],'<b>Hot cues</b> save a moment. Tap the pad again to jump straight back to it.',async()=>{setPanel('R','cues');await dwait(400);press('#dkR [data-hot="0"]');padDown('R',0);await dwait(2200);press('#dkR [data-hot="0"]');padDown('R',0);await dwait(1600)});
-  await scene(n++,T,['#dkR .ptabs','#dkR .panel'],'<b>LOOP</b> repeats 4 beats in time. Halve it for a build-up.',async()=>{setPanel('R','loop');await dwait(400);press('#dkR [data-a=lauto]');autoLoop(B);await dwait(2400);
-    for(let i=0;i<2;i++){press('#dkR [data-a=lhalf]');loopSize(B,0.5);await dwait(1300)}press('#dkR [data-a=lauto]');autoLoop(B);B.lsize=4;refreshAll();await dwait(700)});
-  await scene(n++,T,['#dkR .ptabs','#dkR .panel'],'<b>FX</b>: the <b>Flanger</b> sweeps a jet-plane whoosh across the beat.',async()=>{setPanel('R','fx');while(B.fx.type!=='FLANGER')nextFx(B);await dwait(400);press('#dkR [data-a=fxon]');toggleFx(B);await tween(v=>ui.R.fx.wet.set(v),0.3,0.8,1500);await dwait(2000);toggleFx(B)});
-  await scene(n++,T,undefined,'<b>Stutter</b> repeats a tiny slice of the beat, then drops back in perfect time.',async()=>{press('#dkR [data-a=fxtype]');while(B.fx.type!=='STUTTER')nextFx(B);await dwait(500);
-    for(let i=0;i<2;i++){press('#dkR [data-a=fxon]');toggleFx(B);await dwait(1100);toggleFx(B);await dwait(700)}});
+  await scene(n++,T,['#dkL .tcol','#jogL'],'<b>PLAY</b> starts Deck A. The platter spins, and its outer ring shows how far through the track you are.',async()=>{press('#dkL [data-a=play]');togglePlay(A);await dwait(3600)});
+  await scene(n++,T,'#strips','The waveforms show the beats coming up. The <b>Beats</b> bar compares Deck A and Deck B.',()=>dwait(3400));
+  await scene(n++,T,['#dkR .tcol','#dkR .tempo'],'<b>SYNC</b> matches Deck B to Deck A\'s tempo: 126 becomes 124 BPM.',async()=>{press('#dkR [data-a=sync]');toggleSync(B);await dwait(3200)});
+  await scene(n++,T,['#dkR .tcol','#strips'],'<b>PLAY</b> on Deck B starts it right on the beat. The Beats bar turns green: locked.',async()=>{press('#dkR [data-a=play]');togglePlay(B);await dwait(4000)});
+  await scene(n++,T,'#mxR','Turn Deck B\'s <b>LOW</b> knob down, so two basslines won\'t clash.',async()=>{press('[data-mid="R:kn:lo"]');await tween(v=>ui.R.kn.lo.set(v),0,-1,1500);await dwait(1000)});
+  await scene(n++,T,'.mx-xf','Slide the <b>crossfader</b> to bring Deck B into the mix.',async()=>{await tween(v=>xfader.set(v),-1,0,3000);await dwait(700)});
+  await scene(n++,T,['#mxL','#mxR'],'Swap the bass: Deck A\'s <b>LOW</b> goes down while Deck B\'s comes back up.',async()=>{press('[data-mid="L:kn:lo"]');await Promise.all([tween(v=>ui.L.kn.lo.set(v),0,-1,2400),tween(v=>ui.R.kn.lo.set(v),-1,0,2400)]);await dwait(700)});
+  await scene(n++,T,'.mx-xf','Finish the mix: crossfader across, and Deck B plays on its own.',async()=>{await tween(v=>xfader.set(v),0,1,2200);press('#dkL [data-a=play]');togglePlay(A);ui.L.kn.lo.set(0);await dwait(700)});
+  await scene(n++,T,['#dkR .ptabs','#dkR .panel'],'<b>Hot cues</b> save a moment. Tap the pad again to jump straight back to it.',async()=>{setPanel('R','cues');await dwait(400);press('#dkR [data-hot="0"]');padDown('R',0);await dwait(2000);press('#dkR [data-hot="0"]');padDown('R',0);await dwait(1400)});
+  await scene(n++,T,['#dkR .ptabs','#dkR .panel'],'<b>LOOP</b> repeats 4 beats in time. Halve it for a build-up.',async()=>{setPanel('R','loop');await dwait(400);press('#dkR [data-a=lauto]');autoLoop(B);await dwait(2200);
+    for(let i=0;i<2;i++){press('#dkR [data-a=lhalf]');loopSize(B,0.5);await dwait(1200)}press('#dkR [data-a=lauto]');autoLoop(B);B.lsize=4;refreshAll();await dwait(600)});
+  await scene(n++,T,['#dkR .ptabs','#dkR .panel'],'<b>FX</b>: the <b>Flanger</b> sweeps a jet-plane whoosh across the beat.',async()=>{setPanel('R','fx');while(B.fx.type!=='FLANGER')nextFx(B);await dwait(400);press('#dkR [data-a=fxon]');toggleFx(B);await tween(v=>ui.R.fx.wet.set(v),0.3,0.8,1400);await dwait(1800);toggleFx(B)});
   await scene(n++,T,undefined,'The <b>High-pass</b> and <b>Low-pass</b> filters sweep the sound away and bring it back.',async()=>{press('#dkR [data-a=fxtype]');while(B.fx.type!=='HPF')nextFx(B);await dwait(400);press('#dkR [data-a=fxon]');toggleFx(B);
-    await tween(v=>ui.R.fx.p1.set(v),0.05,0.85,2000);await tween(v=>ui.R.fx.p1.set(v),0.85,0.05,1600);toggleFx(B);await dwait(400)});
-  if(Dd.buf)await scene(n++,T,['#dkR .ptabs','#dkR .panel'],'<b>Deck D</b> layers an extra track, synced automatically, with its own gain and FX.',async()=>{setPanel('R','xd');await dwait(400);press('#dkR [data-x=play]');if(!Dd.sync)toggleSync(Dd);togglePlay(Dd);
-    await tween(v=>ui.R.xg.set(v),0,0.75,1800);await dwait(2600);await tween(v=>ui.R.xg.set(v),0.75,0,1400);togglePlay(Dd)});else n++;
-  await scene(n++,T,['#dkR .ptabs','#dkR .panel'],'The <b>Sampler</b> grabs part of the song: <b>IN</b> marks the start, <b>OUT</b> the end, and it saves to a pad.',async()=>{
-    setPanel('R','xd');Dd.xmode='pads';Dd.slots=[null,null,null,null];Dd.slotNext=0;refreshAll();ui.R.xg.set(0.85);await dwait(700);
-    const bl=60/(B.bpm*ratio(B));press('#dkR [data-x=sin]');sampIn('R');await dwait(bl*2000);press('#dkR [data-x=sout]');await sampOut('R');await dwait(1100);
-    cap('Tap the pad to fire the sample. It lands on the beat, at the mix tempo.');
-    for(const gap of[2,2,1,1,0.5,0.5]){press('#dkR [data-sp="0"]');playSlot('R',0);await dwait(gap*bl*1000)}await dwait(900);Dd.xmode='track';Dd.slots=[null,null,null,null];refreshAll()});
-  await scene(n++,T,['#recBtn','#libBtn'],'<b>REC</b> records your mix. <b>Library</b> is where you add your own music and playlists.',async()=>{press('#recBtn');await dwait(1600);press('#libBtn');await dwait(1800)});
+    await tween(v=>ui.R.fx.p1.set(v),0.05,0.85,1800);await tween(v=>ui.R.fx.p1.set(v),0.85,0.05,1400);toggleFx(B);await dwait(300)});
+  /* ---- the other screens ---- */
+  await scene(n++,T,['#viewBtn'],'<b>VIEW</b> switches screens. Each one shows fewer controls, but bigger, for small phones.',async()=>{press('#viewBtn');$('viewPop').hidden=false;await dwait(2600);$('viewPop').hidden=true});
+  await scene(n++,T,null,'<b>Mixer</b>: big faders, Gain and EQ in the middle, and each deck\'s FX on the sides.',async()=>{press('#viewPop [data-view=mixer]');setView('mixer',true);await dwait(900);
+    press('[data-mid="R:kn:hi"]');await tween(v=>ui.R.kn.hi.set(v),0,-0.8,1100);await tween(v=>ui.R.kn.hi.set(v),-0.8,0,900);
+    while(B.fx.type!=='DELAY')nextFx(B);refreshAll();press('#dkR [data-a=fxon]');toggleFx(B);await tween(v=>ui.R.fx.wet.set(v),0.2,0.7,1200);await dwait(1400);toggleFx(B);await dwait(300)});
+  if(Dd.buf)await scene(n++,T,null,'<b>Decks C &amp; D</b>: extra tracks, synced automatically, each with play, gain and an FX knob.',async()=>{setView('cd',true);await dwait(700);press('#dkR [data-x=play]');if(!Dd.sync)toggleSync(Dd);togglePlay(Dd);
+    await tween(v=>ui.R.xg.set(v),0,0.75,1600);await dwait(2200);await tween(v=>ui.R.xg.set(v),0.75,0,1200);togglePlay(Dd);refreshAll()});else n++;
+  await scene(n++,T,null,'<b>Sampler</b>: <b>IN</b> marks the start of a sound, <b>OUT</b> the end, and it saves to a pad. It can sample the mic too.',async()=>{
+    Dd.slots=[null,null,null,null];Dd.slotNext=0;setView('sampler',true);ui.R.xg.set(0.85);await dwait(800);
+    const bl=60/(B.bpm*ratio(B));press('#dkR [data-x=sin]');sampIn('R');await dwait(bl*2000);press('#dkR [data-x=sout]');await sampOut('R');await dwait(900);
+    cap('Tap a pad to fire the sample. It lands on the beat, at the mix tempo.');
+    for(const gap of[2,2,1,1,0.5,0.5]){press('#dkR [data-sp="0"]');playSlot('R',0);await dwait(gap*bl*1000)}await dwait(700);Dd.slots=[null,null,null,null];ui.R.xg.set(0);refreshAll()});
+  /* ---- Battle mode ---- */
+  await scene(n++,T,null,'<b>Battle mode</b> is for scratching: a hip hop beat on Deck A, a scratch record on Deck B.',async()=>{
+    for(const d of decks)if(d.playing)await togglePlay(d);setView('platters',true);
+    const ld=async(k,i)=>{const t=lib.tracks.find(x=>x.demo===i);if(t&&decks[k].name!==DEMOS[i].name)await loadTrack(k,t)};await ld(0,4);await ld(1,5);
+    SCR.deck='B';SCR.auto='off';renderScr();ui.L.cf.set(0.85);ui.R.cf.set(0.95);ui.L.kn.lo.set(0);ui.R.kn.lo.set(0);seek(B,B.hot[0]!=null?B.hot[0]:B.cue);xfader.set(-1);
+    press('#dkL [data-a=play]');togglePlay(A);await dwait(2600)});
+  await scene(n++,T,['#xlock'],'<b>BATTLE FADER</b>: a razor-sharp cut, and the crossfader springs back closed. The white sticker marks the start of the sound.',async()=>{press('#xlock [data-sc=battle]');setBattle(true);await dwait(3200)});
+  await scene(n++,T,null,'<b>Forward scratch</b>: hold <b>CUT</b> as you push the record, let go as you pull back. You only hear the push.',async()=>{
+    await demoStrokes(B,[[1,.3],[1,-.3],[1,.3],[1,-.3],[1,.3],[1,-.3],[1,.3],[1,-.3]],(i,dir)=>demoPad(dir>0))});
+  await scene(n++,T,null,'<b>Chirp</b>: cut the end of every push, so the sound "chirps".',async()=>{
+    await demoStrokes(B,[[.5,.24],[.5,-.24],[.5,.24],[.5,-.24],[.5,.24],[.5,-.24],[.5,.24],[.5,-.24]],(i,dir,u)=>demoPad(dir>0?u<0.55:u>0.3),true)});
+  await scene(n++,T,['#cutPad','#jogR'],'<b>Transformer</b>: drag the record slowly and tap <b>CUT</b> in time with the beat.',async()=>{
+    const bl=60/(A.bpm*ratio(A));await demoStrokes(B,[[4,.5],[4,-.5]],(i,dir,u,t)=>{const ph=(t/(bl*500))%1;demoPad(ph<0.45)},true)});
+  await scene(n++,T,['#xlock'],'Learning? <b>AUTO FWD</b> works the crossfader for you: it opens only while the record moves forward.',async()=>{press('#xlock [data-xm=fwd]');SCR.auto='fwd';SCR.cur=null;renderScr();
+    await demoStrokes(B,[[1,.3],[1,-.3],[1,.3],[1,-.3],[.5,.2],[.5,-.2],[.5,.2],[.5,-.2]]);SCR.auto='off';renderScr();xfader.set(restPhys())});
+  await scene(n++,T,['#xlock','.mx-xf'],'<b>HAMSTER</b> flips the crossfader, the way many battle DJs like it. The A and B labels swap ends.',async()=>{const was=SCR.hamster;press('#xlock [data-sc=hamster]');SCR.hamster=!was;xfader.set(-mix.xf);renderScr();await dwait(2600);
+    SCR.hamster=was;xfader.set(-mix.xf);renderScr();await dwait(500);press('#dkL [data-a=play]');togglePlay(A)});
+  await scene(n++,T,['#lesBtn'],'<b>★ Lessons</b>: 14 challenges with stars, from Play &amp; Cue and beatmatching to forward scratches, chirps, transformers and a battle round.',async()=>{
+    press('#lesBtn');setView('console',true);openLessons();await dwait(2400);$('lesGrid').scrollTo({top:9999,behavior:'smooth'});await dwait(2600);closeLessons();await dwait(400)});
+  await scene(n++,T,['#recBtn','#libBtn'],'<b>REC</b> records your mix. <b>Library</b> is where you add your own music and playlists.',async()=>{press('#recBtn');await dwait(1500);press('#libBtn');await dwait(1600)});
   await scene(T,T,null,'Your turn! Press <b>PLAY</b> and start mixing.',()=>dwait(2600));
 }
+/* demo hands: animate strokes on a deck's record (the platter follows), calling cb(i,dir,u,ms) every frame for fader moves */
+async function demoStrokes(d,P,cb,grid){const bl=60/(decks[0].bpm*ratio(decks[0]));
+  await dwait(Math.max(0,(1-frac((dispPos(decks[0])-decks[0].first)*decks[0].bpm/60))*bl*1000-30));
+  const a0=dispPos(d)/(SEC_PER_REV*d.sens)*Math.PI*2;d.touching=true;d.hand={a:a0,off:0};post({t:'touch',d:d.k,on:true});const T0=performance.now();
+  try{for(let i=0;i<P.length;i++){const[b,disp]=P[i],dur=b*bl*1000,t0=performance.now();let last=0;
+    await new Promise(res=>{const step=()=>{if(DEMO.abort)return res();if(DEMO.paused){requestAnimationFrame(step);return}
+      const u=Math.min(1,(performance.now()-t0)/dur),o=disp*(1-Math.cos(Math.PI*u))/2;if(o!==last){post({t:'scratch',d:d.k,delta:o-last});d.hand.a+=(o-last)/(SEC_PER_REV*d.sens)*Math.PI*2;last=o}
+      if(cb)cb(i,Math.sign(disp),u,performance.now()-T0);if(u<1)requestAnimationFrame(step);else res()};step()})}}
+  finally{d.hand=null;d.touching=false;post({t:'touch',d:d.k,on:false});demoPad(false)}}
+function demoPad(open){if(!SCR.battle&&SCR.auto==='off'){return}if(SCR.auto!=='off')return;const was=$('cutPad').classList.contains('on');if(was===open)return;$('cutPad').classList.toggle('on',open);xfader.set(open?0:restPhys())}
 async function startDemo(){if(DEMO.on)return;if(LES.on)quitLesson();if(curView!=='console')setView('console',true);ensureAudio().catch(()=>{});closeLib();closeSetup();$('welcome').hidden=true;
   DEMO.on=true;DEMO.abort=false;DEMO.paused=false;$('hudPause').textContent='Pause';$('hudProg').style.width='0';$('hudCap').innerHTML='Getting the decks ready…';
   $('hud').hidden=false;layout();placeTip();const st=$('stage');
   try{await ensureAudio();await demoPrepare();st.style.transition='transform .9s cubic-bezier(.45,0,.2,1)';await runDemo()}
   catch(e){if(e!==ABORT)console.error(e)}
   finally{DEMO.on=false;DEMO.paused=false;st.style.transition='transform .6s ease';focus(null);setTimeout(()=>{st.style.transition=''},700);
-    $('hud').hidden=true;try{await demoPrepare();xfader.set(0);decks.forEach(d=>{restorePrep(d);if(d.buf)seek(d,d.cue)})}catch(e){}refreshAll();renderTip();
+    $('hud').hidden=true;try{closeLessons();$('viewPop').hidden=true;if(curView!=='console')setView('console',true);await demoPrepare();xfader.set(0);decks.forEach(d=>{restorePrep(d);if(d.buf)seek(d,d.cue)})}catch(e){}refreshAll();renderTip();
     if(!LS.get('ns-onboarded',false)){pane('level');$('welcome').hidden=false}}}
 $('hudSkip').onclick=()=>{DEMO.abort=true;DEMO.paused=false};
 $('hudPause').onclick=()=>{DEMO.paused=!DEMO.paused;$('hudPause').textContent=DEMO.paused?'Resume':'Pause';
