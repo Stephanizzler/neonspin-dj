@@ -383,6 +383,7 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 .lesbtn{color:var(--go);border-color:color-mix(in srgb,var(--go) 50%,var(--edge-hi))}
 .short .strips{padding-right:440px}
 .les-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:12px 14px;height:calc(100% - 52px);box-sizing:border-box;overflow:auto;align-content:start}
+.les-h{grid-column:1/-1;margin:4px 2px 0;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .les-card{text-align:left;background:var(--well);border:1.5px solid var(--edge-hi);border-radius:14px;padding:10px 14px;display:flex;flex-direction:column;gap:3px;min-width:0}
 .les-card .n{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
 .les-card b{font-size:18px}
@@ -854,19 +855,68 @@ function makeHouse(o){
   for(let i=0;i<len;i++){while(j<ki.length&&ki[j]<=i){last=ki[j];j++}const g=1-0.45*Math.exp(-(i-last)/sr*9);L[i]=L[i]*g+K[i]*0.95;R[i]=R[i]*g+K[i]*0.95}
   return norm({L,R,sr},0.9);
 }
+/* Hip hop demo: boom bap at ~90 BPM. Intro, verse, an 8-bar drum break (for juggling), verse, outro. */
+function makeHipHop(o){
+  const sr=44100,beat=60/o.bpm,bar=beat*4,bars=o.bars,len=Math.ceil((o.offset+bars*bar+2)*sr),TAU=2*Math.PI;
+  const L=new Float32Array(len),R=new Float32Array(len),rnd=rng(o.seed);
+  const put=(t,dur,gl,gr,fn)=>{const s0=Math.round(t*sr);if(s0<0||s0>=len)return;const n=Math.min(Math.round(dur*sr),len-s0);for(let i=0;i<n;i++){const v=fn(i/sr);L[s0+i]+=v*gl;R[s0+i]+=v*gr}};
+  const hz=s=>o.root*Math.pow(2,s/12);
+  const sec=b=>b<4?'intro':b<20?'verse':b<28?'break':b<44?'verse2':'outro';
+  for(let b=0;b<bars;b++){const S=sec(b),t0=o.offset+b*bar,ch=o.prog[b%4],full=S==='verse'||S==='verse2';
+    const kp=b%4===3?[0,7,10,14]:b%2?[0,3,10]:[0,7,10];const at=q=>t0+q*beat/4+(q%2?o.swing*beat/4:0);
+    for(let q=0;q<16;q++){const t=at(q);
+      if(S==='outro'?q===0:kp.includes(q)){let ph=0,f=110,a=1;const kf=Math.exp(-28/sr),ka=Math.exp(-7/sr);
+        put(t,0.5,1,1,x=>{ph+=(48+f)/sr;f*=kf;const v=Math.sin(TAU*ph)*a;a*=ka;return(v*1.1+(x<0.003?rnd()*0.4*(1-x/0.003):0))*0.9})}
+      if((q===4||q===12)&&!(S==='intro'&&b<2)){let a=0,c=0,ph=0;put(t,0.35,1,0.95,x=>{a+=0.5*(rnd()-a);c+=0.15*(a-c);ph+=190/sr*(1-x*0.5);
+        return(Math.sin(TAU*ph)*Math.exp(-x*30)*0.5+(a-c)*(Math.exp(-x*14)*0.9+0.25*Math.exp(-x*5))*1.6)*0.75})}
+      if(full&&((q===15&&b%2===1)||(q===9&&b%4===2))){let a=0,c=0;put(t,0.08,1,1,x=>{a+=0.5*(rnd()-a);c+=0.15*(a-c);return(a-c)*Math.exp(-x*45)*0.35})}
+      if((S!=='intro'&&q%2===0)||(S==='intro'&&b>=2&&q%4===2)){const op=q===14&&b%2===1;let p=0;const acc=q%4===0?0.6:1;
+        put(t,op?0.3:0.05,0.8,1,x=>{const n=rnd(),y=n-p;p=n;return y*Math.exp(-x*(op?11:70))*0.16*acc})}
+    }
+    if(full||(S==='break'&&b>=24)){kp.forEach(q=>{if(q>12)return;const f=hz(ch+12),d=q===0?beat*1.6:beat*0.9;let ph=0;
+      put(at(q),d,1,1,x=>{ph+=f/sr;return Math.sin(TAU*ph)*(x<0.01?x/0.01:1)*(x>d-0.05?(d-x)/0.05:1)*0.55})})}
+    if(full){[0,b%2?10:8].forEach((q,qi)=>{const dur=qi?beat*1.8:beat*1.9;o.voicing.forEach((v,j)=>{const f=hz(ch+v+24);let p1=0,p2=0;
+      put(at(q),dur,j%2?0.7:1,j%2?1:0.7,x=>{p1+=f/sr;p2+=f*2/sr;const env=(x<0.008?x/0.008:1)*Math.exp(-x*1.6)*(x>dur-0.06?(dur-x)/0.06:1);
+        return(Math.sin(TAU*p1)+0.35*Math.sin(TAU*p2)*Math.exp(-x*6))*env*(1+0.15*Math.sin(TAU*4.5*x))*0.055})})})}
+  }
+  for(let i=0;i<len;i++){const n=rnd();L[i]+=n*0.004;R[i]+=rnd()*0.004;if(n>0.9993){const a=rnd()*0.08;L[i]+=a;R[i]+=a*0.8}}   /* vinyl crackle */
+  return norm({L,R,sr},0.9)}
+/* Battle tool record: isolated scratch sounds, each a few seconds apart, the set repeated. Hot cues 1-4 sit on the sounds. */
+function makeTools(o){
+  const sr=44100,len=Math.ceil(o.len*sr),TAU=2*Math.PI,L=new Float32Array(len),R=new Float32Array(len),rnd=rng(o.seed);
+  const pk=a=>{let m=1e-9;for(const v of a)m=Math.max(m,Math.abs(v));for(let i=0;i<a.length;i++)a[i]*=0.85/m;return a};
+  const add=(t,a)=>{const s0=Math.round(t*sr);for(let i=0;i<a.length&&s0+i<len;i++){L[s0+i]+=a[i];R[s0+i]+=a[i]}};
+  const bp=()=>{let x1=0,x2=0,y1=0,y2=0;return(x,f,bw)=>{const w=TAU*f/sr,al=Math.sin(w)/(2*f/bw),a0=1+al,y=(al*x-al*x2+2*Math.cos(w)*y1-(1-al)*y2)/a0;x2=x1;x1=x;y2=y1;y1=y;return y}};
+  const lerp=(a,b,k)=>a+(b-a)*k;
+  /* formant voice: a buzzy glottal tone shaped by three vocal-tract resonances */
+  const voice=(dur,f0,form)=>{const n=Math.round(dur*sr),out=new Float32Array(n),F=[bp(),bp(),bp()];let ph=0;
+    for(let i=0;i<n;i++){const x=i/sr,p=x/dur;ph+=f0(p,x)/sr;ph-=Math.floor(ph);const src=(1-2*ph)*0.6+rnd()*0.06,[f1,f2,f3]=form(p);
+      out[i]=(F[0](src,f1,90)+F[1](src,f2,120)*0.6+F[2](src,f3,180)*0.3)*Math.min(1,x/0.02)*Math.min(1,(dur-x)/0.12)}return pk(out)};
+  const ahh=voice(0.7,(p,x)=>150-15*p+3*Math.sin(TAU*5.5*x),()=>[730,1090,2440]);
+  const yeah=voice(0.5,(p,x)=>165+20*Math.sin(Math.PI*p)-25*p,p=>{const k=Math.min(1,p/0.4);return[lerp(300,730,k),lerp(2200,1150,k),lerp(2900,2500,k)]});
+  const horn=(()=>{const dur=0.5,n=Math.round(dur*sr),out=new Float32Array(n),fs=[233.1,293.7,349.2,466.2],ph=fs.map(()=>rnd()*0.5+0.5);let l1=0,l2=0;
+    for(let i=0;i<n;i++){const x=i/sr,bend=x<0.03?Math.pow(2,(-1+x/0.03)/12):1;let s=0;fs.forEach((f,j)=>{ph[j]+=f*bend*(1+(j-1.5)*0.002)/sr;ph[j]-=Math.floor(ph[j]);s+=1-2*ph[j]});
+      const k=1-Math.exp(-TAU*(600+3800*Math.exp(-x*7))/sr);l1+=k*(s-l1);l2+=k*(l1-l2);out[i]=l2*Math.min(1,x/0.012)*(x<dur-0.08?1:(dur-x)/0.08)*Math.exp(-x*1.2)}return pk(out)})();
+  const tone=(()=>{const dur=2,n=Math.round(dur*sr),out=new Float32Array(n);let ph=0,lp=0;
+    for(let i=0;i<n;i++){const x=i/sr;ph+=330*(1+0.004*Math.sin(TAU*5*x))/sr;ph-=Math.floor(ph);lp+=0.18*((1-2*ph)-lp);out[i]=(lp*0.7+Math.sin(TAU*ph)*0.4)*Math.min(1,x/0.01)*Math.min(1,(dur-x)/0.05)}return pk(out)})();
+  [0,o.rep].forEach(r=>[ahh,yeah,horn,tone].forEach((s,i)=>add(o.hot[i]+r,s)));
+  return {L,R,sr}}
+function makeDemo(o){return o.kind==='hiphop'?makeHipHop(o):o.kind==='tools'?makeTools(o):makeHouse(o)}
 function norm(b,to){const L=b.L,R=b.R,n=L.length;let pk=1e-9;for(let i=0;i<n;i++){const a=L[i]<0?-L[i]:L[i],c=R[i]<0?-R[i]:R[i];if(a>pk)pk=a;if(c>pk)pk=c}const g=to/pk;for(let i=0;i<n;i++){L[i]*=g;R[i]*=g}return b}
 const DEMOS=[
   {name:'Warehouse Sunrise',genre:'Organ house',bpm:124,root:55,offset:0.21,seed:11,prog:[0,-4,-2,-5],voicing:[0,3,7,10],style:'organ',rhythm:[2,6,10,13],swing:0.06},
   {name:'Velvet Keys',genre:'Piano house',bpm:126,root:49,offset:0.63,seed:23,prog:[0,5,-3,-2],voicing:[4,7,11,14],style:'piano',rhythm:[0,3,6,10,12],swing:0.08},
   {name:'Basement Pulse',genre:'Deep house',bpm:122,root:41.2,offset:0.40,seed:37,prog:[0,0,3,-2],voicing:[0,3,7,10],style:'organ',rhythm:[3,6,11,14],swing:0.1},
   {name:'Rooftop Disco',genre:'Disco house',bpm:125,root:46.25,offset:0.10,seed:41,prog:[0,-5,-3,-1],voicing:[4,7,11,14],style:'piano',rhythm:[2,6,10,14],swing:0.04},
+  {name:'Cypher Session',genre:'Boom bap',kind:'hiphop',bpm:90,root:43.65,offset:0.3,seed:53,bars:48,prog:[0,5,3,-2],voicing:[3,7,10,14],swing:0.12,grid:true},
+  {name:'Scratch Tools',genre:'Battle tool',kind:'tools',bpm:90,offset:1,seed:61,len:31,hot:[1,4,7,10],rep:15,grid:true},
 ];
-const demoDur=d=>d.offset+64*4*60/d.bpm+2;
+const demoDur=d=>d.kind==='tools'?d.len:d.offset+(d.bars||64)*4*60/d.bpm+2;
 /* render in a Worker (falls back to the main thread) */
 const demoP={};let synthURL=null;
 function demoBuf(i){if(demoP[i])return demoP[i];
-  return demoP[i]=new Promise(res=>{const local=()=>setTimeout(()=>res(makeHouse(DEMOS[i])),0);
-    try{synthURL=synthURL||URL.createObjectURL(new Blob([`${rng}\n${norm}\n${makeHouse}\nonmessage=e=>{const b=makeHouse(e.data);postMessage({L:b.L,R:b.R,sr:b.sr},[b.L.buffer,b.R.buffer])}`],{type:'text/javascript'}));
+  return demoP[i]=new Promise(res=>{const local=()=>setTimeout(()=>res(makeDemo(DEMOS[i])),0);
+    try{synthURL=synthURL||URL.createObjectURL(new Blob([`${rng}\n${norm}\n${makeHouse}\n${makeHipHop}\n${makeTools}\n${makeDemo}\nonmessage=e=>{const b=makeDemo(e.data);postMessage({L:b.L,R:b.R,sr:b.sr},[b.L.buffer,b.R.buffer])}`],{type:'text/javascript'}));
       const w=new Worker(synthURL);w.onmessage=e=>{w.terminate();res(e.data)};w.onerror=e=>{e.preventDefault();w.terminate();local()};w.postMessage(DEMOS[i])}
     catch(e){local()}})}
 
@@ -879,13 +929,21 @@ function analyze({L,R,sr}){
     const el=Math.log(1+1000*sl/hop),ea=Math.log(1+1000*sa/hop);ol[f]=f?Math.max(0,el-pl):0;o[f]=ol[f]+0.6*(f?Math.max(0,ea-pa):0);pl=el;pa=ea}
   const win=Math.round(fps*0.4),cs=new Float64Array(F+1);for(let f=0;f<F;f++)cs[f+1]=cs[f]+o[f];
   const on=new Float32Array(F);for(let f=0;f<F;f++){const a0=Math.max(0,f-win),b0=Math.min(F,f+win+1);on[f]=Math.max(0,o[f]-(cs[b0]-cs[a0])/(b0-a0))}
-  const minL=Math.floor(fps*60/190),maxL=Math.ceil(fps*60/65),ac=new Float32Array(maxL+2);
-  for(let l=minL-1;l<=maxL+1;l++){let s=0;for(let f=l;f<F;f++)s+=on[f]*on[f-l];ac[l]=s/(F-l)}
-  let bl=minL,bs=-1;for(let l=minL;l<=maxL;l++){const bpm=60*fps/l,w=Math.exp(-0.5*Math.pow(Math.log2(bpm/122)/0.5,2)),s=ac[l]*w;if(s>bs){bs=s;bl=l}}
-  const y0=ac[bl-1],y1=ac[bl],y2=ac[bl+1],den=y0-2*y1+y2;const lag=bl+(den?clamp(0.5*(y0-y2)/den,-0.5,0.5):0);
-  let bpm=60*fps/lag;while(bpm<78)bpm*=2;while(bpm>=160)bpm/=2;
+  const minL=Math.floor(fps*60/190),maxL=Math.ceil(fps*60/65),ac=new Float32Array(4*maxL+8);
+  for(let l=minL-1;l<=4*maxL+4;l++){let s=0;for(let f=l;f<F;f++)s+=on[f]*on[f-l];ac[l]=s/(F-l)}
   const hist=(src,b,nb)=>{const P=fps*60/b,h=new Float32Array(nb);for(let f=0;f<F;f++){const ph=f/P;h[Math.floor((ph-Math.floor(ph))*nb)%nb]+=src[f]}return h};
   const peak=h=>{let m=0,s=0;for(let i=0;i<h.length;i++){const v=h[i]+0.5*(h[(i+1)%h.length]+h[(i-1+h.length)%h.length]);s+=v;if(v>m)m=v}return m/(s/h.length+1e-9)};
+  const pick=sc=>{let bl=minL,bs=-1;for(let l=minL;l<=maxL;l++){const s=sc(l,60*fps/l);if(s>bs){bs=s;bl=l}}return bl};
+  /* first opinion: tuned for 4/4 dance music around 122 BPM */
+  let bl=pick((l,bpm)=>ac[l]*Math.exp(-0.5*Math.pow(Math.log2(bpm/122)/0.5,2)));
+  /* second opinion: also rewards repeats at 2 and 4 beats, with a wide tempo range (hip hop, breaks). If the two disagree
+     (other than by double/half), keep the one whose BAR repeats more cleanly once both tempos are fine-tuned. */
+  {const b2=pick((l,bpm)=>(ac[l]+0.75*ac[2*l]+0.5*ac[4*l])*Math.exp(-0.5*Math.pow(Math.log2(bpm/110)/0.9,2))),r=b2/bl;
+   if(Math.abs(r-1)>0.03&&Math.abs(r-2)>0.06&&Math.abs(r-0.5)>0.03){
+     const refine=b=>{for(const[span,step]of[[30,0.0006],[10,0.00006]]){let best=b,sc=-1;const c=b;for(let i=-span;i<=span;i++){const x=c*(1+i*step),v=peak(hist(on,x,64));if(v>sc){sc=v;best=x}}b=best}return b};
+     const bar=l=>peak(hist(on,refine(60*fps/l)/4,128));if(bar(b2)>bar(bl)*1.15)bl=b2}}
+  const y0=ac[bl-1],y1=ac[bl],y2=ac[bl+1],den=y0-2*y1+y2;const lag=bl+(den?clamp(0.5*(y0-y2)/den,-0.5,0.5):0);
+  let bpm=60*fps/lag;while(bpm<78)bpm*=2;while(bpm>=160)bpm/=2;
   for(const[span,step]of[[30,0.0006],[10,0.00006]]){let best=bpm,sc=-1;const c=bpm;for(let i=-span;i<=span;i++){const b=c*(1+i*step),s=peak(hist(on,b,64));if(s>sc){sc=s;best=b}}bpm=best}
   if(Math.abs(bpm-Math.round(bpm))<0.06)bpm=Math.round(bpm);else bpm=Math.round(bpm*100)/100;
   const nb=96,h=hist(ol,bpm,nb),sm=new Float32Array(nb);for(let i=0;i<nb;i++)sm[i]=h[i]*2+h[(i+1)%nb]+h[(i-1+nb)%nb];
@@ -1052,7 +1110,7 @@ function applyMix(k){if(!G)return;const c=mix.ch[k],n=G.ch[k],t=ctx.currentTime,
   n.fader.gain.setTargetAtTime(c.fader<=0?0:Math.pow(c.fader,1.6),t,tc);n.pfl.gain.setTargetAtTime(c.pfl?1:0,t,0.005)}
 var SCR={deck:'B',battle:false,hamster:LS.get('sl-hamster',false),cutIn:0.03,auto:'off',prevCurve:'blend',lastA:null,v:0,cur:null};
 function xfGains(){const t=((SCR.hamster?-mix.xf:mix.xf)+1)/2;if(mix.curve==='battle'){const c=SCR.cutIn;return[t<1-c?1:0,t>c?1:0]}if(mix.curve==='cut')return[clamp((1-t)*14,0,1),clamp(t*14,0,1)];return[Math.cos(t*Math.PI/2),Math.sin(t*Math.PI/2)]}
-function applyXf(){if(!G)return;const[gl,gr]=xfGains(),t=ctx.currentTime,tc=mix.curve==='battle'?0.0012:0.004;G.ch.forEach((n,k)=>n.xf.gain.setTargetAtTime(k>=2?1:k%2===0?gl:gr,t,tc))}
+function applyXf(){if(!G)return;const[gl,gr]=xfGains(),t=ctx.currentTime,tc=mix.curve==='battle'?0.0012:0.004;G.ch.forEach((n,k)=>n.xf.gain.setTargetAtTime(k>=2?1:k%2===0?gl:gr,t,tc));if(typeof LES!=='undefined'&&LES&&LES.on)lesXf(gr>0.5)}
 function applyMaster(){if(!G)return;const t=ctx.currentTime;G.masterG.gain.setTargetAtTime(mix.master*1.25,t,0.01);
   G.cueA.gain.setTargetAtTime(Math.cos(mix.cueMix*Math.PI/2),t,0.01);G.cueB.gain.setTargetAtTime(Math.sin(mix.cueMix*Math.PI/2),t,0.01);
   G.phonesG.gain.setTargetAtTime(mix.cueVol*1.2,t,0.01);G.micG.gain.setTargetAtTime(mix.micOn?mix.mic*1.6:0,t,0.01)}
@@ -1164,9 +1222,9 @@ async function loadTrack(k,tr){
     if(tr.demo!=null){buf=await demoBuf(tr.demo)}
     else{await ensureAudio();toast('Loading '+tr.name+'…',9000);const ad=await ctx.decodeAudioData(await trackBytes(tr));buf={L:ad.getChannelData(0),R:ad.numberOfChannels>1?ad.getChannelData(1):ad.getChannelData(0),sr:ad.sampleRate}}
     if(d.playing){d.playing=false;post({t:'play',d:k,on:false})}
-    const an=analyze(buf),pr=tr.prep;if(pr&&pr.bpm){an.bpm=pr.bpm;an.first=pr.first}
+    const an=analyze(buf),pr=tr.prep,dm=tr.demo!=null?DEMOS[tr.demo]:null;if(dm&&dm.grid){an.bpm=dm.bpm;an.first=dm.offset}if(pr&&pr.bpm){an.bpm=pr.bpm;an.first=pr.first}
     if(!d.sync){d.fader=0}   /* a new song starts at its own tempo */
-    Object.assign(d,{buf,name:tr.name,artist:tr.artist||'',peaks:computePeaks(buf),bpm:an.bpm,first:an.first,dur:buf.L.length/buf.sr,pos:0,v:0,recv:0,cue:pr&&pr.cue!=null?pr.cue:an.first,hot:pr&&pr.hot?[...pr.hot]:[null,null,null,null],loop:null,loopIn:null,tr});
+    Object.assign(d,{buf,name:tr.name,artist:tr.artist||'',peaks:computePeaks(buf),bpm:an.bpm,first:an.first,dur:buf.L.length/buf.sr,pos:0,v:0,recv:0,cue:pr&&pr.cue!=null?pr.cue:an.first,hot:pr&&pr.hot?[...pr.hot]:dm&&dm.hot?[...dm.hot]:[null,null,null,null],loop:null,loopIn:null,tr});
     if(d.sync&&!d.bpm){d.sync=false;post({t:'sync',d:k,on:false})}
     setTempo(d);sendLoad(d);if(an.first>0.001)seek(d,an.first);
     if(tr.id&&tr.demo==null&&(!tr.bpm||tr.bpm!==an.bpm)){tr.bpm=an.bpm;tr.dur=d.dur;saveTrack(tr);renderLib()}
@@ -1925,7 +1983,7 @@ addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;$('in
 $('installBtn').onclick=async()=>{if(!installEvt)return;installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;$('installBtn').hidden=true};
 addEventListener('appinstalled',()=>{$('installBtn').hidden=true;toast('SoundLab DJ is installed. Open it from your home screen.',4000)});
 /* updates: check for a new version on every launch and whenever the app comes back to the screen; load it straight away when nothing is playing */
-const APP_VER=17;try{$('verTxt').textContent='version '+APP_VER}catch(e){}
+const APP_VER=18;try{$('verTxt').textContent='version '+APP_VER}catch(e){}
 if(document.querySelector('link[rel=manifest]')&&'serviceWorker' in navigator){
   const hadSW=!!navigator.serviceWorker.controller;let reloading=false;
   navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{
@@ -2216,17 +2274,62 @@ const LESSONS=[
    {t:()=>$('xfader'),txt:'Finish: crossfader all the way to <b>B</b>.',done:()=>mix.xf>0.85},
    {t:()=>$('recBtn'),txt:'Press <b>REC</b> again to stop. Your mix is saved in <b>Library › My mixes</b>, where you can play it back.',init:()=>({n:takes.length}),done:s=>!rec&&takes.length>s.n}],
   result:()=>'Your mix is in Library › My mixes.'},
+ /* ---- Battle: Deck A plays the Cypher Session beat, Deck B holds Scratch Tools, battle fader on ---- */
+ {id:'fwd',group:'Battle',title:'Forward scratch',lvl:'Battle',view:'platters',about:'Hear only the push: the fader opens as the record goes forward and closes on the way back.',prep:()=>battlePrep(),
+  steps:[
+   {t:()=>$('cutPad'),txt:'Deck A plays a hip hop beat. Deck B holds <b>Scratch Tools</b>: the white sticker marks the "Ahh". Hold the <b>CUT</b> pad and push Deck B\'s record forward to hear it.',
+    init:()=>{LES.sc.on=true;return{k:LES.sc.strokes.length}},done:s=>doneStrokes(s.k).some(x=>x.dir>0&&x.o/x.f>0.5)},
+   {t:()=>$('jogR'),txt:'Now the <b>forward scratch</b>: hold CUT and push forward, <b>let go of CUT</b>, then pull back in silence. Do 8. Tip: pad 1 under Deck B jumps back to the Ahh.',
+    init:()=>({k:LES.sc.strokes.length}),done:s=>{const st=doneStrokes(s.k);let good=0,fw=0;
+      for(let i=0;i<st.length;i++)if(st[i].dir>0){fw++;const nx=st[i+1];if(st[i].o/st[i].f>0.6&&nx&&nx.dir<0&&nx.o/nx.f<0.35)good++}
+      LES.q.good=good;LES.q.tries=fw;return good>=8}}],
+  stars:r=>r.skipped?1:(r.q.good/Math.max(r.q.tries,1))>=0.8?3:(r.q.good/Math.max(r.q.tries,1))>=0.6?2:1,
+  result:r=>r.q.tries?`${r.q.good} clean forward scratches out of ${r.q.tries} pushes`:''},
+ {id:'chirp',group:'Battle',title:'Chirp',lvl:'Battle',view:'platters',about:'Cut the end of every push to make the sound "chirp", like a bird.',prep:()=>battlePrep(),
+  steps:[
+   {t:()=>$('cutPad'),txt:'Hold <b>CUT</b>, push the record forward and <b>let go of CUT while the record is still moving</b>, so the end of the push is cut off. Press CUT again as you pull back. Do 6 chirps.',
+    init:()=>{LES.sc.on=true;return{k:LES.sc.strokes.length}},done:s=>{const st=doneStrokes(s.k).filter(x=>x.dir>0);
+      const good=st.filter(x=>x.s&&!x.e&&x.o/x.f>0.2).length;LES.q.good=good;LES.q.tries=st.length;return good>=6}}],
+  stars:r=>r.skipped?1:(r.q.good/Math.max(r.q.tries,1))>=0.75?3:(r.q.good/Math.max(r.q.tries,1))>=0.5?2:1,
+  result:r=>r.q.tries?`${r.q.good} chirps out of ${r.q.tries} pushes`:''},
+ {id:'trans',group:'Battle',title:'Transformer',lvl:'Battle',view:'platters',about:'Move the record slowly while tapping the fader open in time: the sound "transforms".',prep:()=>battlePrep(),
+  steps:[
+   {t:()=>$('cutPad'),txt:'Drag Deck B\'s record <b>slowly</b> forward or back with one hand, and <b>tap CUT</b> with the other, in time: two taps for every kick drum. 12 taps.',
+    init:()=>{LES.sc.on=true;return{k:LES.sc.edges.length}},done:s=>{const taps=LES.sc.edges.slice(s.k).filter(x=>x.open&&x.moving);
+      LES.q.on=taps.slice(0,12).filter(x=>Math.abs(x.e8)<60).length;return taps.length>=12}}],
+  stars:r=>r.skipped||r.q.on==null?1:r.q.on>=9?3:r.q.on>=6?2:1,
+  result:r=>r.q.on!=null?`${r.q.on} of 12 taps landed in time${r.q.on>=9?': sharp!':'. Get 9 or more for 3 stars.'}`:''},
+ {id:'flare',group:'Battle',title:'One-click flare',lvl:'Battle',view:'platters',about:'Start open and click the sound off once in the middle of each stroke.',prep:()=>battlePrep(),
+  steps:[
+   {t:()=>$('cutPad'),txt:'Hold <b>CUT</b> with one finger and push the record. In the middle of the push, <b>tap CUT with a second finger</b>: that clicks the sound off for an instant. Pull back and click again. 6 strokes with a click.',
+    init:()=>{LES.sc.on=true;return{k:LES.sc.strokes.length}},done:s=>{const st=doneStrokes(s.k);
+      const good=st.filter(x=>x.s&&x.e&&x.tr>=2&&x.tr<=4).length;LES.q.good=good;LES.q.tries=st.length;return good>=6}}],
+  stars:r=>r.skipped?1:(r.q.good/Math.max(r.q.tries,1))>=0.7?3:(r.q.good/Math.max(r.q.tries,1))>=0.45?2:1,
+  result:r=>r.q.tries?`${r.q.good} flares out of ${r.q.tries} strokes`:''},
+ {id:'round',group:'Battle',title:'Battle round',lvl:'Battle final',view:'platters',about:'8 bars over the beat, any techniques. Scored on how many of your cuts land in time.',prep:()=>battlePrep(),
+  steps:[
+   {t:()=>$('jogR'),txt:'Your round: 8 bars over the beat, using any techniques you like. It starts when you <b>touch Deck B\'s record</b>.',init:()=>{LES.sc.on=true;return{}},done:()=>!!decks[1].hand},
+   {t:()=>$('cutPad'),live:true,txt:()=>{const s=LES.st,A=decks[0],bl=60/(A.bpm*ratio(A));const left=Math.max(0,Math.ceil(8-(performance.now()-s.t0)/1000/(bl*4)));
+      return`<b>Go!</b> ${left} bar${left===1?'':'s'} left · ${LES.sc.edges.slice(s.k).filter(x=>x.open&&x.moving).length} cuts`},
+    init:()=>({k:LES.sc.edges.length,t0:performance.now()}),done:s=>{const A=decks[0],secs=8*4*60/(A.bpm*ratio(A));if((performance.now()-s.t0)/1000<secs)return false;
+      const cuts=LES.sc.edges.slice(s.k).filter(x=>x.open&&x.moving);LES.q.cuts=cuts.length;LES.q.on=cuts.filter(x=>Math.abs(x.e8)<60).length;return true}}],
+  stars:r=>{if(r.skipped||!r.q.cuts)return 1;const k=r.q.on/r.q.cuts;return r.q.cuts>=16&&k>=0.7?3:r.q.cuts>=8&&k>=0.5?2:1},
+  result:r=>r.q.cuts?`${r.q.cuts} cuts, ${Math.round(r.q.on/r.q.cuts*100)}% in time${r.q.cuts<16?'. Aim for 16+ cuts.':''}`:'No cuts this time. Use CUT or the crossfader while you scratch.'},
 ];
+/* battle lessons: hip hop beat on A, the tool record on B (cued on the Ahh), battle fader on */
+async function battlePrep(){const ld=async(k,i)=>{const t=lib.tracks.find(x=>x.demo===i);if(t&&decks[k].name!==DEMOS[i].name)await loadTrack(k,t)};
+  await ld(0,4);await ld(1,5);setView('platters',true);SCR.deck='B';setBattle(true);ui.L.cf.set(0.85);ui.R.cf.set(0.95);const B=decks[1];seek(B,B.hot[0]!=null?B.hot[0]:B.cue);await playDeck(A_());renderScr();refreshAll()}
 const lesProg=()=>LS.get('sl-lessons',{});
 const starStr=n=>'★'.repeat(n)+'☆'.repeat(3-n);
 function openLessons(){closeLib();closeSetup();renderLessons();$('lessons').classList.add('open')}
 function closeLessons(){$('lessons').classList.remove('open')}
 function renderLessons(){const pr=lesProg();let tot=0;const g=$('lesGrid');g.innerHTML='';
-  LESSONS.forEach((l,i)=>{const s=(pr[l.id]||{}).stars||0;tot+=s;const b=document.createElement('button');b.className='les-card'+(s?' done':'');
+  let grp=null;LESSONS.forEach((l,i)=>{const gname=l.group||'Mixing';if(gname!==grp){grp=gname;const h=document.createElement('h3');h.className='les-h';h.textContent=gname==='Battle'?'Battle: scratch techniques':'Mixing';g.appendChild(h)}
+    const s=(pr[l.id]||{}).stars||0;tot+=s;const b=document.createElement('button');b.className='les-card'+(s?' done':'');
     b.innerHTML=`<span class="n">${i+1} · ${l.lvl}</span><b>${l.title}</b><p>${l.about}</p><span class="st" aria-label="${s} of 3 stars">${starStr(s)}</span>`;b.onclick=()=>startLesson(i);g.appendChild(b)});
   $('lesTot').textContent=`★ ${tot} of ${LESSONS.length*3} stars`}
 async function startLesson(i){if(DEMO.on||!LESSONS[i])return;closeLessons();closeLib();closeSetup();if(tipState.on)setTips(false);
-  const l=LESSONS[i];Object.assign(LES,{on:true,busy:true,i,q:{},h:{},skipped:false,passing:false,result:null,sc:{strokes:[]}});renderLes();
+  const l=LESSONS[i];Object.assign(LES,{on:true,busy:true,i,q:{},h:{},skipped:false,passing:false,result:null,sc:{strokes:[],edges:[],fr:[],ah:[]}});renderLes();
   try{await ensureAudio();await demoPrepare();view.L=0;view.R=1;setView(l.view||'console',true);if(l.prep)await l.prep();refreshAll()}catch(e){console.error(e)}
   if(!LES.on||LES.i!==i)return;LES.busy=false;LES.t0=performance.now();lesStep(0)}
 function lesStep(n){const l=LESSONS[LES.i],st=l.steps[n];Object.assign(LES,{step:n,passing:false,h:{},stepT0:performance.now()});LES.st=st.init?st.init():{};
@@ -2256,16 +2359,32 @@ function placeLes(){const c=$('lesCard'),ring=$('lesRing');if(!LES.on){c.hidden=
     const right=x+w/2<640,tx=right?Math.min(1280-tw-8,x+w+14):Math.max(8,x-tw-14);c.style.left=tx+'px';c.style.top=clamp(y+10,8,SH-th-8)+'px';return}
   const above=y-th-16>4,ty=above?y-th-16:Math.min(SH-th-6,y+h+16),tx=clamp(x+w/2-tw/2,8,1280-tw-8);
   c.style.left=tx+'px';c.style.top=ty+'px';c.classList.add(above?'above':'below');c.style.setProperty('--ax',clamp(x+w/2-tx,18,tw-18)+'px')}
-function lesTick(){if(!LES.on||LES.busy)return;placeLes();if(LES.result||LES.passing)return;const st=LESSONS[LES.i].steps[LES.step];
+function lesTick(){if(!LES.on||LES.busy)return;placeLes();if(LES.result||LES.passing)return;const st=LESSONS[LES.i].steps[LES.step];if(st.live)$('lesText').innerHTML=st.txt();
   if(performance.now()-LES.stepT0>350&&st.done(LES.st)){LES.passing=true;$('lesOk').hidden=false;
     setTimeout(()=>{if(!LES.on||LES.result)return;if(LES.step+1<LESSONS[LES.i].steps.length)lesStep(LES.step+1);else finishLesson()},850)}}
-/* scratch strokes on Deck B: each change of direction starts a stroke; a forward push "on the beat" lands within 90 ms of one of Deck A's beats */
-function lesFrame(){if(!LES||!LES.on||!LES.sc.on)return;const sc=LES.sc,d=decks[1];
-  if(!d.hand){sc.dir=0;sc.rev=null;return}const a=d.hand.a;
-  const err=()=>{const A=decks[0];if(!A.playing||!A.bpm)return 999;const lat=ctx?(ctx.outputLatency||ctx.baseLatency||0):0,p=dispPos(A)-lat*ratio(A),b=(p-A.first)*A.bpm/60;return(b-Math.round(b))*60/(A.bpm*ratio(A))*1000};
-  if(!sc.dir){if(sc.rev==null){sc.rev=a;sc.revE=err()}else if(Math.abs(a-sc.rev)<0.03)sc.revE=err();if(Math.abs(a-sc.rev)>0.12){sc.dir=Math.sign(a-sc.rev);sc.strokes.push({dir:sc.dir,on:Math.abs(sc.revE)<90});sc.ext=a;sc.extE=err()}return}
-  if((a-sc.ext)*sc.dir>0){sc.ext=a;sc.extE=err();return}if(Math.abs(a-sc.ext)<0.03){sc.extE=err();return}
-  if((sc.ext-a)*sc.dir>0.12){sc.dir=-sc.dir;sc.strokes.push({dir:sc.dir,on:Math.abs(sc.extE)<90});sc.ext=a;sc.extE=err()}}
+/* scratch technique tracking on Deck B (the scratch deck in lessons).
+   strokes: each change of record direction starts one; it records whether the fader was open at its start/end, how many
+   times the fader cut during it, and the share of time it was open. edges: every fader cut in/out, with its timing against Deck A's beat. */
+function lesBeatErr(div){const A=decks[0];if(!A.playing||!A.bpm)return 999;const lat=ctx?(ctx.outputLatency||ctx.baseLatency||0):0,p=dispPos(A)-lat*ratio(A),b=(p-A.first)*A.bpm/60*div;return(b-Math.round(b))*60/(A.bpm*ratio(A)*div)*1000}
+function lesMoving(){const sc=LES.sc,d=decks[1];if(!d.hand||!sc.ah||!sc.ah.length)return false;const now=performance.now();let lo=1e9,hi=-1e9;
+  for(const x of sc.ah)if(now-x.t<=300){lo=Math.min(lo,x.a);hi=Math.max(hi,x.a)}return hi-lo>0.04}
+function lesXf(open){const sc=LES.sc;if(!LES.on||!sc.on||open===sc.lastOpen)return;sc.lastOpen=open;sc.edges.push({t:performance.now(),open,moving:lesMoving(),e8:lesBeatErr(2)})}
+/* fader state at time t, and a stroke's stats, worked out afterwards from timestamps (so fader moves right at a turn count for the right stroke) */
+function lesOpenAt(t){const ed=LES.sc.edges;for(let i=ed.length-1;i>=0;i--)if(ed[i].t<=t)return ed[i].open;return LES.sc.open0}
+function strokeStats(st){const sc=LES.sc,t1=st.t1==null?performance.now():st.t1;let f=0,o=0;for(const x of sc.fr)if(x.t>=st.t0&&x.t<t1){f++;if(x.open)o++}
+  return{f,o,s:lesOpenAt(st.t0+(t1-st.t0)*0.2),e:lesOpenAt(t1-1),tr:sc.edges.filter(x=>x.t>st.t0&&x.t<t1).length}}
+const doneStrokes=k=>LES.sc.strokes.slice(k).filter(x=>x.t1!=null).map(x=>Object.assign({dir:x.dir},strokeStats(x))).filter(x=>x.f>2);
+function lesFrame(){if(!LES||!LES.on||!LES.sc.on)return;const sc=LES.sc,d=decks[1],now=performance.now();if(sc.lastOpen==null){sc.lastOpen=xfGains()[1]>0.5;sc.open0=sc.lastOpen}
+  const last=sc.strokes[sc.strokes.length-1];
+  if(!d.hand){if(last&&last.t1==null)last.t1=now;sc.dir=0;sc.rev=null;sc.ah=[];return}const a=d.hand.a;
+  sc.fr.push({t:now,open:sc.lastOpen});if(sc.fr.length>4000)sc.fr.splice(0,1000);
+  (sc.ah=sc.ah||[]).push({t:now,a});while(sc.ah.length&&now-sc.ah[0].t>400)sc.ah.shift();
+  const start=(dir,e,t0)=>{if(last&&last.t1==null)last.t1=t0;sc.strokes.push({dir,on:Math.abs(e)<90,t0,t1:null})};
+  const err=()=>lesBeatErr(1);
+  if(!sc.dir){if(sc.rev==null){sc.rev=a;sc.revE=err();sc.revT=now}else if(Math.abs(a-sc.rev)<0.03){sc.revE=err();sc.revT=now}
+    if(Math.abs(a-sc.rev)>0.12){sc.dir=Math.sign(a-sc.rev);start(sc.dir,sc.revE,sc.revT);sc.ext=a;sc.extE=err();sc.extT=now}return}
+  if((a-sc.ext)*sc.dir>0){sc.ext=a;sc.extE=err();sc.extT=now;return}if(Math.abs(a-sc.ext)<0.03){sc.extE=err();sc.extT=now;return}
+  if((sc.ext-a)*sc.dir>0.12){sc.dir=-sc.dir;start(sc.dir,sc.extE,sc.extT);sc.ext=a;sc.extE=err();sc.extT=now}}
 $('lesBtn').onclick=()=>$('lessons').classList.contains('open')?closeLessons():openLessons();
 $('lesClose').onclick=closeLessons;
 $('lesQuit').onclick=quitLesson;
