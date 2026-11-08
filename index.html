@@ -222,6 +222,7 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 .mx-ch{--dc:var(--a);display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--well);border:1px solid var(--edge);border-radius:12px;padding:6px 4px;min-height:0;overflow:hidden}
 .mx-head{font-size:15px;font-weight:800;color:var(--screen);background:var(--dc);border-radius:7px;padding:0 9px;line-height:20px}
 .knobs{display:grid;grid-template-columns:1fr 1fr;gap:1px 4px;justify-items:center}
+.knobs>.knob-wrap:first-child{grid-column:1/-1}   /* Gain on top, the 4 EQ bands below (filtering lives in the HPF/LPF effects) */
 .pfl{background:var(--panel-2);border:1px solid var(--edge-hi);border-radius:8px;font-size:12px;font-weight:800;letter-spacing:.12em;padding:4px 14px;color:var(--muted)}
 .pfl.on{background:var(--pfl);border-color:var(--pfl);color:var(--screen);box-shadow:0 0 12px -3px var(--pfl)}
 .mx-fd{display:flex;gap:8px;align-items:stretch;flex:1 1 0;min-height:0;overflow:hidden}
@@ -257,7 +258,7 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 
 /* MIXER view: only the mixer, everything larger */
 /* layout: FX A | channel A | channel B | FX B, with a short crossfader under the channels.
-   Only what matters while mixing: channel faders, crossfader, gain, EQ (+filter) and FX. */
+   Only what matters while mixing: channel faders, crossfader, gain, EQ and FX. */
 #stage.v-mixer .mainrow{grid-template-columns:200px minmax(0,1fr) 200px;gap:8px}
 #stage.v-mixer.short .mainrow{grid-template-columns:184px minmax(0,1fr) 184px;gap:6px}
 #stage.v-mixer #dkL{grid-column:1;grid-row:1}
@@ -1187,7 +1188,7 @@ for(const s of['L','R']){
   u.tf=makeFader($('tf'+s),{orient:'v',min:-1,max:1,value:0,def:0,detent:0,invert:true,label:'Tempo',mid:s+':tempo',disabled:()=>sideDeck(s).sync,onChange:v=>{const d=sideDeck(s);if(d.sync)return;d.fader=v;setTempo(d);refreshText()}});
   u.cf=makeFader($('cf'+s),{orient:'v',min:0,max:1,value:0.8,def:0.8,label:'Channel fader',mid:s+':cf',onChange:v=>{const k=view[s];mix.ch[k].fader=v;applyMix(k)}});
   u.kn={};
-  [['trim','Gain'],['hi','Hi'],['mhi','Mid Hi'],['mlo','Mid Lo'],['lo','Low'],['filt','Filter']].forEach(([key,label])=>{u.kn[key]=makeKnob($('kb'+s),{label,min:-1,max:1,value:0,def:0,mid:`${s}:kn:${key}`,onChange:v=>{const k=view[s];mix.ch[k][key]=v;applyMix(k)}})});
+  [['trim','Gain'],['hi','Hi'],['mhi','Mid Hi'],['mlo','Mid Lo'],['lo','Low']].forEach(([key,label])=>{u.kn[key]=makeKnob($('kb'+s),{label,min:-1,max:1,value:0,def:0,mid:`${s}:kn:${key}`,onChange:v=>{const k=view[s];mix.ch[k][key]=v;applyMix(k)}})});
   u.fx={};
   [['wet','Wet',0.5],['p1','Time',0.5],['p2','Fdbk',0.4]].forEach(([key,label,def])=>{u.fx[key]=makeKnob($('fxk'+s),{label,min:0,max:1,value:def,def,sm:true,mid:`${s}:fx:${key}`,onChange:v=>{const d=sideDeck(s);d.fx[key]=v;applyFx(d.k);if(d.roll&&key==='p1')startRoll(d);$('fxv'+s).textContent=fxInfo(d).txt}})});
   u.sens=makeKnob($('sens'+s),{label:'Jog',min:0.25,max:3,value:1,def:1,sm:true,mid:`${s}:sens`,onChange:v=>{sideDeck(s).sens=v;refreshText()}});
