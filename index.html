@@ -245,7 +245,7 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 .vbtn span{font-weight:800}
 .short .top .vbtn{grid-row:span 2;flex-direction:column;font-size:17px}
 .short .top .vbtn small{font-size:11px}
-.short .strips{padding-right:336px}
+
 .viewpop{position:absolute;right:10px;top:54px;z-index:40;width:350px;background:#1f1a40;border:1px solid var(--edge-hi);border-radius:16px;box-shadow:0 18px 50px rgba(0,0,0,.7);padding:8px;display:flex;flex-direction:column;gap:6px}
 .short .viewpop{top:88px}
 .viewpop[hidden]{display:none}
@@ -379,6 +379,25 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 #stage.v-samp .xtrack>[id^=xa] .knob{width:84px;height:84px;padding:4px}
 #stage.v-samp.short .xtrack>[id^=xa] .knob{width:64px;height:64px;padding:3px}
 #stage.v-samp.short .xdeck>[id^=xg] .knob{width:72px;height:72px;padding:4px}
+/* lessons */
+.lesbtn{color:var(--go);border-color:color-mix(in srgb,var(--go) 50%,var(--edge-hi))}
+.short .strips{padding-right:440px}
+.les-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:12px 14px;height:calc(100% - 52px);box-sizing:border-box;overflow:auto;align-content:start}
+.les-card{text-align:left;background:var(--well);border:1.5px solid var(--edge-hi);border-radius:14px;padding:10px 14px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.les-card .n{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.les-card b{font-size:18px}
+.les-card p{margin:0;font-size:13px;color:var(--muted);line-height:1.35}
+.les-card .st{color:var(--pfl);font-size:20px;letter-spacing:3px;margin-top:2px}
+.les-card.done{border-color:color-mix(in srgb,var(--go) 55%,var(--edge-hi))}
+.tip.les{width:320px;border-color:var(--go);box-shadow:0 12px 40px rgba(0,0,0,.7),0 0 18px -6px var(--go);z-index:37}
+.tip.les::after{border-color:var(--go)}
+.tip.les:not(.above):not(.below)::after{display:none}
+.tip.les .tip-n,.tip.les p b{color:var(--go)}
+.les-ring{border-color:var(--go);box-shadow:0 0 0 4px rgba(46,229,157,.2),0 0 18px var(--go)}
+.les-res{display:flex;flex-direction:column;gap:8px}
+.les-stars{font-size:38px;letter-spacing:6px;color:var(--pfl);text-align:center;line-height:1.1}
+.les-res p{text-align:center;font-size:14px !important;color:var(--muted) !important}
+.les-next{background:var(--go);color:var(--screen);border-color:var(--go)}
 .led{width:8px;height:8px;border-radius:50%;background:#2a2540;display:inline-block}
 .led.on{background:var(--rec);box-shadow:0 0 6px var(--rec)}
 
@@ -536,6 +555,7 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
       <button class="tb vbtn" id="viewBtn" aria-haspopup="true" aria-expanded="false"><small>VIEW</small><span id="viewName">Console</span></button>
       <button class="tb" id="libBtn">Library</button>
       <button class="tb" id="setupBtn">Setup</button>
+      <button class="tb lesbtn" id="lesBtn">★ Lessons</button>
       <button class="tb" id="learnBtn" hidden>MIDI Learn</button>
       <button class="tb recbtn" id="recBtn" aria-label="Record mix"><span class="dot"></span>REC</button>
       <span class="rectime" id="recTime">00:00</span>
@@ -590,6 +610,10 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
       <div class="lib-main"><table><thead><tr><th aria-label="Drag"></th><th>#</th><th>Title</th><th>Artist</th><th>BPM</th><th>Time</th><th>Cues</th><th>Load to deck</th><th></th></tr></thead><tbody id="libRows"></tbody></table></div>
     </section>
 
+    <section class="drawer" id="lessons" aria-label="Lessons">
+      <div class="dhead"><h2>Lessons</h2><span class="tgt" id="lesTot"></span><span class="sp"></span><button class="tb sm" id="lesClose">Close</button></div>
+      <div class="les-grid" id="lesGrid"></div>
+    </section>
     <section class="drawer" id="setup" aria-label="Setup">
       <div class="dhead"><h2>Setup</h2><span class="tgt">Audio interface, headphone cue, microphone and MIDI controller · <span class="mono" id="verTxt"></span></span><span class="sp"></span><button class="tb sm" id="setupClose">Close</button></div>
       <div class="setup-body">
@@ -677,6 +701,14 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
       <p class="pro-soon" id="proSoon" hidden>Pro is coming soon. Everything is free to use for now.</p>
       <label class="pro-key" for="proKey">Already bought Pro? Enter your licence key<span><input id="proKey" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false"><button class="tb sm" id="proActivate">Activate</button></span></label>
       <div class="wrow"><button class="tb" id="proClose">Not now</button></div>
+    </div>
+    <div class="tip-ring les-ring" id="lesRing" hidden></div>
+    <div class="tip les" id="lesCard" role="status" aria-live="polite" hidden>
+      <div class="tip-head"><span class="tip-n" id="lesHead"></span><button class="tip-off" id="lesQuit">Quit lesson</button></div>
+      <p id="lesText"></p>
+      <div class="tip-row" id="lesRow"><span></span><span class="tip-done" id="lesOk" hidden>✓ Nice</span><button class="tb sm" id="lesSkip">Skip step</button></div>
+      <div class="les-res" id="lesRes" hidden><div class="les-stars" id="lesStars"></div><p id="lesResTxt"></p>
+        <div class="tip-row"><button class="tb sm" id="lesAll">All lessons</button><button class="tb sm" id="lesAgain">Try again</button><button class="tb sm les-next" id="lesNext">Next lesson ›</button></div></div>
     </div>
     <div class="tip-ring" id="tipRing" hidden></div>
     <div class="tip" id="tip" role="status" aria-live="polite" hidden>
@@ -1785,7 +1817,8 @@ function frame(now){
     $('limLed').classList.toggle('on',G.lim.reduction<-1.5);
     if(now-lastFx>150){lastFx=now;decks.forEach(d=>{if(d.fx.on&&(d.fx.type==='DELAY'||d.fx.type==='FLANGER'))applyFx(d.k)})}}
   else{['vuL','vuR','vuML','vuMR'].forEach(id=>drawVU(id,0))}
-  if(now-lastTxt>70){lastTxt=now;refreshText();tipTick();
+  lesFrame();
+  if(now-lastTxt>70){lastTxt=now;refreshText();tipTick();lesTick();
     for(const s of['L','R']){const d=sideDeck(s);$('dk'+s).querySelector('[data-a=cue]').classList.toggle('on',!d.playing&&!!d.buf&&Math.abs(dispPos(d)-d.cue)<0.03)}}
   requestAnimationFrame(frame)}
 
@@ -1802,7 +1835,7 @@ addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;$('in
 $('installBtn').onclick=async()=>{if(!installEvt)return;installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;$('installBtn').hidden=true};
 addEventListener('appinstalled',()=>{$('installBtn').hidden=true;toast('SoundLab DJ is installed. Open it from your home screen.',4000)});
 /* updates: check for a new version on every launch and whenever the app comes back to the screen; load it straight away when nothing is playing */
-const APP_VER=13;try{$('verTxt').textContent='version '+APP_VER}catch(e){}
+const APP_VER=14;try{$('verTxt').textContent='version '+APP_VER}catch(e){}
 if(document.querySelector('link[rel=manifest]')&&'serviceWorker' in navigator){
   const hadSW=!!navigator.serviceWorker.controller;let reloading=false;
   navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{
@@ -1898,7 +1931,7 @@ async function runDemo(){
   await scene(n++,T,['#recBtn','#libBtn'],'<b>REC</b> records your mix. <b>Library</b> is where you add your own music and playlists.',async()=>{press('#recBtn');await dwait(1600);press('#libBtn');await dwait(1800)});
   await scene(T,T,null,'Your turn! Press <b>PLAY</b> and start mixing.',()=>dwait(2600));
 }
-async function startDemo(){if(DEMO.on)return;if(curView!=='console')setView('console',true);ensureAudio().catch(()=>{});closeLib();closeSetup();$('welcome').hidden=true;
+async function startDemo(){if(DEMO.on)return;if(LES.on)quitLesson();if(curView!=='console')setView('console',true);ensureAudio().catch(()=>{});closeLib();closeSetup();$('welcome').hidden=true;
   DEMO.on=true;DEMO.abort=false;DEMO.paused=false;$('hudPause').textContent='Pause';$('hudProg').style.width='0';$('hudCap').innerHTML='Getting the decks ready…';
   $('hud').hidden=false;layout();placeTip();const st=$('stage');
   try{await ensureAudio();await demoPrepare();st.style.transition='transform .9s cubic-bezier(.45,0,.2,1)';await runDemo()}
@@ -1977,7 +2010,7 @@ function setTips(on,step){tipState.on=on;if(step!=null)tipState.step=step;if(on)
 function tipsCard(){const on=tipState.on;$('tipsToggle').textContent=on?'Turn tips off':'Turn tips on';$('tipsToggle').classList.toggle('on',on);$('tipsToggle').style.setProperty('--dc','var(--pfl)');
   avail('tipsState',on,on?`Tips are on · step ${Math.min(tipState.step+1,TIPS.length)} of ${TIPS.length}`:'Tips are off')}
 function renderTip(){const tip=$('tip'),ring=$('tipRing');
-  if(!tipState.on||!$('welcome').hidden||tipState.step>=TIPS.length||curView!=='console'){tip.hidden=ring.hidden=true;return}
+  if(!tipState.on||!$('welcome').hidden||tipState.step>=TIPS.length||curView!=='console'||(LES&&LES.on)){tip.hidden=ring.hidden=true;return}
   const st=TIPS[tipState.step];if(st.tab&&panelOf.R!==st.tab){panelOf.R=st.tab;refreshAll()}$('tipCount').textContent=`Tip ${tipState.step+1} of ${TIPS.length}`;$('tipText').innerHTML=st.txt();
   $('tipNext').textContent=st.last?'Finish':'Skip';$('tipBack').disabled=tipState.step===0;$('tipBack').style.visibility=tipState.step===0?'hidden':'visible';$('tipDone').hidden=true;
   tipShownAt=performance.now();placeTip()}
@@ -2000,6 +2033,159 @@ $('tipsRestart').onclick=()=>{setTips(true,0);closeSetup()};
 $('selLevel').onchange=e=>{setLevel(e.target.value);if(e.target.value==='beginner'&&!tipState.on)toast('Tip: turn on Tips for step-by-step help.',3000)};
 $('selLevel').value=LS.get('ns-level','beginner');tipsCard();
 ['libBtn','setupBtn','libClose','setupClose','learnBtn'].forEach(id=>$(id).addEventListener('click',()=>setTimeout(placeTip,260)));
+/* ---------- Lessons: short challenges that check what you do and award up to 3 stars ---------- */
+var LES={on:false,busy:false,i:0,step:0,t0:0,stepT0:0,st:null,q:{},h:{},skipped:false,passing:false,result:null,sc:{strokes:[]}};
+const A_=()=>decks[0],B_=()=>decks[1];
+/* tempo gap (BPM) and beat offset (ms) between Deck A and Deck B */
+function beatGap(){const a=decks[0],b=decks[1];if(!a.bpm||!b.bpm||!a.buf||!b.buf)return{bpm:99,ms:999};
+  const ea=a.bpm*ratio(a),eb=b.bpm*ratio(b),Ba=(dispPos(a)-a.first)*a.bpm/60,Bb=(dispPos(b)-b.first)*b.bpm/60;let e=frac(Ba)-frac(Bb);e-=Math.round(e);return{bpm:eb-ea,ms:e*60/eb*1000}}
+/* true once `ok` has stayed true for `secs` seconds */
+function lesHeld(key,ok,secs){const now=performance.now();if(!ok){LES.h[key]=0;return false}if(!LES.h[key])LES.h[key]=now;return now-LES.h[key]>=secs*1000}
+const playDeck=async d=>{if(!d.playing)await togglePlay(d)};
+const LESSONS=[
+ {id:'play',title:'Play & Cue',lvl:'Beginner',about:'Start a track, stop it on its cue point, preview it, and set your own cue.',t:[60,120],
+  prep:async()=>{panelOf.L='cues';xfader.set(-1)},
+  steps:[
+   {t:()=>q$('#dkL [data-a=play]'),txt:'Press <b>PLAY</b> on Deck A to start the track.',done:()=>A_().playing},
+   {t:()=>q$('#dkL [data-a=cue]'),txt:'Press <b>CUE</b>. The track stops and jumps back to its <b>cue point</b>: the spot where it started.',done:()=>!A_().playing&&Math.abs(dispPos(A_())-A_().cue)<0.06},
+   {t:()=>q$('#dkL [data-a=cue]'),txt:'Now <b>hold CUE down</b>: the track plays while you hold it. Let go and it jumps back. DJs use this to check how a song starts.',init:()=>({seen:false}),done:s=>{if(A_().preview)s.seen=true;return s.seen&&!A_().playing}},
+   {t:()=>$('jogL'),txt:'Set your own cue point: <b>turn Deck A\'s platter</b> with your finger to move to a new spot, then press <b>CUE</b> to save it.',init:()=>({c:A_().cue}),done:s=>Math.abs(A_().cue-s.c)>0.4&&!A_().playing},
+   {t:()=>q$('#dkL [data-a=play]'),txt:'Press <b>PLAY</b>. The track now starts from your new cue point.',done:()=>A_().playing}]},
+ {id:'faders',title:'Faders & crossfader',lvl:'Beginner',about:'Control what the crowd hears with the channel faders and the crossfader.',t:[60,120],
+  prep:async()=>{ui.L.cf.set(0);ui.R.cf.set(0);xfader.set(0);await playDeck(A_())},
+  steps:[
+   {t:()=>$('cfL'),txt:'Deck A is playing, but its <b>channel fader</b> is down, so you hear nothing. Push Deck A\'s channel fader all the way up.',done:()=>mix.ch[0].fader>0.75},
+   {t:()=>q$('#dkR [data-a=play]'),txt:'Press <b>PLAY</b> on Deck B. You won\'t hear it yet: its fader is down.',done:()=>B_().playing},
+   {t:()=>$('xfader'),txt:'Slide the <b>crossfader</b> all the way to the left, to A.',done:()=>mix.xf<-0.85},
+   {t:()=>$('cfR'),txt:'Push Deck B\'s channel fader up. Still only A plays, because the crossfader is on A. This is how DJs get the next song ready.',done:()=>mix.ch[1].fader>0.75},
+   {t:()=>$('xfader'),txt:'Now <b>slowly</b> slide the crossfader all the way to B. Take at least 4 seconds, so the songs blend.',init:()=>({t:0}),
+    done:s=>{const now=performance.now();if(mix.xf<-0.85)s.t=0;else if(!s.t)s.t=now;if(mix.xf>0.85&&s.t){LES.q.fade=(now-s.t)/1000;return true}return false}}],
+  stars:r=>r.skipped?1:1+(r.q.fade>=4?1:0)+(r.secs<=90?1:0),
+  result:r=>r.q.fade!=null?`Your crossfade took ${r.q.fade.toFixed(1)} s${r.q.fade>=4?': nice and smooth.':'. Fade slower (4 s or more) for a star.'}`:''},
+ {id:'sync',title:'SYNC',lvl:'Beginner',about:'Let the app match the tempo and line up the beats for you.',t:[45,90],
+  prep:async()=>{ui.L.cf.set(0.8);ui.R.cf.set(0.8);xfader.set(0);await playDeck(A_())},
+  steps:[
+   {t:()=>q$('#dkR [data-a=sync]'),txt:()=>`Deck A plays at ${A_().bpm.toFixed(0)} BPM and Deck B at ${B_().bpm.toFixed(0)} BPM, so their beats won't line up. Press <b>SYNC</b> on Deck B to match its tempo to A.`,done:()=>B_().sync},
+   {t:()=>q$('#dkR [data-a=play]'),txt:'Press <b>PLAY</b> on Deck B. It starts right on A\'s beat.',done:()=>B_().playing},
+   {t:()=>$('needle'),txt:'Listen: both kick drums hit together. The needle under the waveforms turns <b>green</b> when the beats are locked. Keep it green for 3 seconds.',
+    done:()=>{const g=beatGap();return lesHeld('lock',B_().playing&&Math.abs(g.bpm)<0.05&&Math.abs(g.ms)<15,3)}}]},
+ {id:'hot',title:'Hot cues',lvl:'Beginner',about:'Save spots in a song on the pads and jump between them.',t:[60,120],
+  prep:async()=>{panelOf.L='cues';xfader.set(-1);await playDeck(A_())},
+  steps:[
+   {t:()=>q$('#dkL [data-hot="0"]'),tab:['L','cues'],txt:'Press <b>pad 1</b> on Deck A to save a <b>hot cue</b> right now.',done:()=>A_().hot[0]!=null},
+   {t:()=>q$('#dkL [data-hot="1"]'),tab:['L','cues'],txt:'Let it play a few seconds, then press <b>pad 2</b> to save a second spot.',done:()=>A_().hot[1]!=null},
+   {t:()=>q$('#dkL [data-hot="0"]'),tab:['L','cues'],txt:'Jump around: press <b>pad 1</b>, then <b>pad 2</b>, then <b>pad 1</b> again. Each press jumps straight to that spot.',
+    init:()=>({n:0,last:-1,p:dispPos(A_()),tt:performance.now()}),
+    done:s=>{const d=A_(),p=dispPos(d),now=performance.now(),exp=s.p+(now-s.tt)/1000*(d.playing?ratio(d):0);s.p=p;s.tt=now;
+      if(Math.abs(p-exp)>0.25)for(const i of[0,1])if(d.hot[i]!=null&&Math.abs(p-d.hot[i])<0.2&&i!==s.last){s.n++;s.last=i}return s.n>=3}}]},
+ {id:'loopfx',title:'Loops & effects',lvl:'Beginner',about:'Repeat part of a song with a loop, then add effects.',t:[75,150],
+  prep:async()=>{panelOf.L='loop';xfader.set(-1);A_().fx.type='DELAY';refreshAll();await playDeck(A_())},
+  steps:[
+   {t:()=>q$('#dkL [data-a=lauto]'),tab:['L','loop'],txt:'On Deck A\'s <b>LOOP</b> tab, press <b>LOOP</b>. The last 4 beats repeat over and over.',done:()=>!!A_().loop},
+   {t:()=>q$('#dkL [data-a=lhalf]'),tab:['L','loop'],txt:'Press <b>÷2</b> twice to shrink the loop to 1 beat. Hear the build-up?',done:()=>!!A_().loop&&A_().lsize<=1},
+   {t:()=>q$('#dkL [data-a=lauto]'),tab:['L','loop'],txt:'Press <b>LOOP</b> again to let the song carry on.',done:()=>!A_().loop},
+   {t:()=>q$('#dkL [data-a=fxon]'),tab:['L','fx'],txt:'On the <b>FX</b> tab, press <b>ON</b> to add an echo (Delay).',done:()=>A_().fx.on},
+   {t:()=>q$('#dkL [data-a=fxtype]'),tab:['L','fx'],txt:'Tap the effect name until it says <b>High-pass</b>, then turn the knobs to hear what they do.',done:()=>A_().fx.on&&A_().fx.type==='HPF'},
+   {t:()=>q$('#dkL [data-a=fxon]'),tab:['L','fx'],txt:'Press <b>ON</b> again to turn the effect off.',done:()=>!A_().fx.on}]},
+ {id:'bass',title:'Bass swap',lvl:'Intermediate',about:'The classic DJ blend: swap the basslines with the LOW knobs.',t:[60,120],
+  prep:async()=>{xfader.set(0);ui.L.cf.set(0.8);ui.R.cf.set(0);await playDeck(A_());toggleSync(B_());await playDeck(B_())},
+  steps:[
+   {t:()=>q$('[data-mid="R:kn:lo"]'),txt:'Deck B is playing in time with A, with its fader down. Turn Deck B\'s <b>LOW</b> knob all the way down (drag downwards).',done:()=>mix.ch[1].lo<-0.85},
+   {t:()=>$('cfR'),txt:'Push Deck B\'s <b>channel fader</b> up. You hear B\'s drums and melody, but only A\'s bass.',done:()=>mix.ch[1].fader>0.7},
+   {t:()=>q$('[data-mid="L:kn:lo"]'),txt:'Now <b>swap the bass</b>: turn A\'s LOW down and B\'s LOW back up to the middle, both within 2 seconds. Use two fingers!',init:()=>({a:0,b:0}),
+    done:s=>{const now=performance.now();if(mix.ch[0].lo<-0.7){if(!s.a)s.a=now}else s.a=0;if(mix.ch[1].lo>-0.15){if(!s.b)s.b=now}else s.b=0;
+      if(s.a&&s.b){LES.q.swap=Math.abs(s.a-s.b)/1000;return true}return false}},
+   {t:()=>$('cfL'),txt:'Finish: pull Deck A\'s channel fader down. Deck B now has the dance floor.',done:()=>mix.ch[0].fader<0.1}],
+  stars:r=>r.skipped?1:1+(r.q.swap<=2?1:0)+(r.secs<=90?1:0),
+  result:r=>r.q.swap!=null?`Your bass swap took ${r.q.swap.toFixed(1)} s${r.q.swap<=2?': tight!':'. Aim for under 2 s for a star.'}`:''},
+ {id:'scratch',title:'Baby scratch',lvl:'Intermediate',about:'Your first scratch: push the record back and forth in time with the beat.',view:'platters',t:[60,120],
+  prep:async()=>{xfader.set(0);ui.L.cf.set(0.8);ui.R.cf.set(0.9);await playDeck(A_())},
+  steps:[
+   {t:()=>$('jogR'),txt:'Deck A is playing the beat. Put a finger on the <b>middle of Deck B\'s record</b> and push it forward and back, like rubbing a coin. Do 4 strokes.',
+    init:()=>{LES.sc.on=true;return{k:LES.sc.strokes.length}},done:s=>LES.sc.strokes.length-s.k>=4},
+   {t:()=>$('jogR'),txt:'Now in time: push the record <b>forward on every kick drum</b> of Deck A. Watch the beat lights around Deck A\'s platter. 8 forward pushes.',
+    init:()=>({k:LES.sc.strokes.length}),done:s=>{const f=LES.sc.strokes.slice(s.k).filter(x=>x.dir>0);if(f.length>=8){LES.q.on=f.slice(0,8).filter(x=>x.on).length;return true}return false}}],
+  stars:r=>r.skipped||r.q.on==null?1:r.q.on>=6?3:r.q.on>=4?2:1,
+  result:r=>r.q.on!=null?`${r.q.on} of 8 pushes landed on the beat${r.q.on>=6?': great timing!':'. Get 6 or more for 3 stars.'}`:''},
+ {id:'match',title:'Beatmatch by ear',lvl:'Advanced',about:'No SYNC: match the tempo and line up the beats yourself, like DJs on vinyl.',t:[90,180],
+  prep:async()=>{xfader.set(0);ui.L.cf.set(0.8);ui.R.cf.set(0.8);await playDeck(A_())},
+  steps:[
+   {t:()=>q$('#dkR [data-a=play]'),txt:'Press <b>PLAY</b> on Deck B. Hear the kick drums drifting apart? B is faster than A.',done:()=>B_().playing},
+   {t:()=>$('tfR'),txt:()=>`Move Deck B's <b>tempo fader</b> until B plays at the same BPM as A (${(A_().bpm*ratio(A_())).toFixed(1)}). The <b>Tempo gap</b> under the waveforms goes to 0.`,
+    done:()=>lesHeld('bpm',Math.abs(beatGap().bpm)<0.2,1.2)},
+   {t:()=>q$('#dkR [data-bend="1"]'),txt:'Same speed, but the kicks may not land together. Tap <b>−</b> or <b>+</b> (or spin the outer ring of B\'s platter) to nudge B until the needle under the waveforms stays <b>green for 3 seconds</b>.',
+    done:()=>{const g=beatGap();return lesHeld('ph',B_().playing&&Math.abs(g.bpm)<0.25&&Math.abs(g.ms)<20,3)}}],
+  result:r=>`Beatmatched by ear in ${fmtD(r.secs)}.`},
+ {id:'mix',title:'Your first mix',lvl:'Final',about:'Put it all together and record a full mix from Deck A to Deck B.',t:[120,240],
+  prep:async()=>{xfader.set(-1);ui.L.cf.set(0.8);ui.R.cf.set(0.8);await playDeck(A_())},
+  steps:[
+   {t:()=>$('recBtn'),txt:'Press <b>REC</b> to start recording your mix.',done:()=>!!rec},
+   {t:()=>q$('#dkR [data-a=sync]'),txt:'Get Deck B ready: press <b>SYNC</b>, turn B\'s <b>LOW</b> down, then press <b>PLAY</b>. The crossfader keeps it quiet for now.',done:()=>B_().sync&&B_().playing&&mix.ch[1].lo<-0.6},
+   {t:()=>$('xfader'),txt:'Bring B in: slide the <b>crossfader</b> slowly to the middle.',done:()=>mix.xf>-0.2},
+   {t:()=>q$('[data-mid="L:kn:lo"]'),txt:'<b>Swap the bass</b>: A\'s LOW down, B\'s LOW back up to the middle.',done:()=>mix.ch[0].lo<-0.6&&mix.ch[1].lo>-0.2},
+   {t:()=>$('xfader'),txt:'Finish: crossfader all the way to <b>B</b>.',done:()=>mix.xf>0.85},
+   {t:()=>$('recBtn'),txt:'Press <b>REC</b> again to stop. Your mix is saved in <b>Library › My mixes</b>, where you can play it back.',init:()=>({n:takes.length}),done:s=>!rec&&takes.length>s.n}],
+  result:()=>'Your mix is in Library › My mixes.'},
+];
+const lesProg=()=>LS.get('sl-lessons',{});
+const starStr=n=>'★'.repeat(n)+'☆'.repeat(3-n);
+function openLessons(){closeLib();closeSetup();renderLessons();$('lessons').classList.add('open')}
+function closeLessons(){$('lessons').classList.remove('open')}
+function renderLessons(){const pr=lesProg();let tot=0;const g=$('lesGrid');g.innerHTML='';
+  LESSONS.forEach((l,i)=>{const s=(pr[l.id]||{}).stars||0;tot+=s;const b=document.createElement('button');b.className='les-card'+(s?' done':'');
+    b.innerHTML=`<span class="n">${i+1} · ${l.lvl}</span><b>${l.title}</b><p>${l.about}</p><span class="st" aria-label="${s} of 3 stars">${starStr(s)}</span>`;b.onclick=()=>startLesson(i);g.appendChild(b)});
+  $('lesTot').textContent=`★ ${tot} of ${LESSONS.length*3} stars`}
+async function startLesson(i){if(DEMO.on||!LESSONS[i])return;closeLessons();closeLib();closeSetup();if(tipState.on)setTips(false);
+  const l=LESSONS[i];Object.assign(LES,{on:true,busy:true,i,q:{},h:{},skipped:false,passing:false,result:null,sc:{strokes:[]}});renderLes();
+  try{await ensureAudio();await demoPrepare();view.L=0;view.R=1;setView(l.view||'console',true);if(l.prep)await l.prep();refreshAll()}catch(e){console.error(e)}
+  if(!LES.on||LES.i!==i)return;LES.busy=false;LES.t0=performance.now();lesStep(0)}
+function lesStep(n){const l=LESSONS[LES.i],st=l.steps[n];Object.assign(LES,{step:n,passing:false,h:{},stepT0:performance.now()});LES.st=st.init?st.init():{};
+  if(st.tab){panelOf[st.tab[0]]=st.tab[1];refreshAll()}renderLes()}
+function finishLesson(){const l=LESSONS[LES.i],secs=(performance.now()-LES.t0)/1000,r={secs,skipped:LES.skipped,q:LES.q};LES.sc.on=false;
+  const stars=l.stars?l.stars(r):r.skipped?1:secs<=l.t[0]?3:secs<=l.t[1]?2:1;
+  const pr=lesProg(),old=pr[l.id]||{};pr[l.id]={stars:Math.max(stars,old.stars||0),best:Math.min(secs,old.best||1e9),last:Date.now()};LS.set('sl-lessons',pr);
+  LES.result={stars,secs,txt:l.result?l.result(r):'',better:!!old.stars&&stars>old.stars};renderLes()}
+function quitLesson(){LES.on=false;LES.result=null;LES.sc.on=false;$('lesCard').hidden=$('lesRing').hidden=true;renderTip()}
+function renderLes(){const l=LESSONS[LES.i];if(!LES.on)return;$('lesCard').hidden=false;
+  const res=!!LES.result;$('lesRes').hidden=!res;$('lesRow').hidden=res;$('lesOk').hidden=true;$('lesCard').classList.toggle('done',res);
+  if(res){const r=LES.result;$('lesHead').textContent=`Lesson ${LES.i+1} · ${l.title}`;$('lesText').innerHTML=r.stars===3?'<b>Lesson complete. Perfect!</b>':'<b>Lesson complete!</b>';
+    $('lesStars').textContent=starStr(r.stars);
+    $('lesResTxt').innerHTML=[`Time: ${fmtD(r.secs)}`,r.txt,r.better?'New best!':'',r.stars<3?(LES.skipped?'Finish every step without skipping to earn more stars.':'Try again to earn more stars.'):''].filter(Boolean).join('<br>');
+    $('lesNext').hidden=LES.i>=LESSONS.length-1;placeLes();return}
+  $('lesHead').textContent=LES.busy?`Lesson ${LES.i+1} · ${l.title}`:`Lesson ${LES.i+1} · Step ${LES.step+1} of ${l.steps.length}`;
+  const st=l.steps[LES.step];$('lesText').innerHTML=LES.busy?'Getting the decks ready…':(typeof st.txt==='function'?st.txt():st.txt);
+  $('lesSkip').hidden=LES.busy;placeLes()}
+function placeLes(){const c=$('lesCard'),ring=$('lesRing');if(!LES.on){c.hidden=ring.hidden=true;return}
+  if(DEMO.on||['lib','setup','lessons'].some(id=>$(id).classList.contains('open'))){c.hidden=ring.hidden=true;return}
+  c.hidden=false;const tw=320,th=c.offsetHeight;let el=null;if(!LES.result&&!LES.busy){const st=LESSONS[LES.i].steps[LES.step];el=st.t&&st.t()}
+  const r=el&&el.getClientRects().length?elRect(el):null;c.classList.remove('above','below');
+  if(!r||!r.width){ring.hidden=true;c.style.left=(1280-tw)/2+'px';c.style.top=Math.max(8,(SH-th)/2)+'px';return}
+  ring.hidden=false;const x=r.left,y=r.top,w=r.width,h=r.height;
+  Object.assign(ring.style,{left:x-5+'px',top:y-5+'px',width:w+10+'px',height:h+10+'px',borderRadius:el.classList.contains('jog')?'50%':'10px'});
+  if(h>SH*0.45){/* big targets (platters, tall faders): put the card beside them */
+    const right=x+w/2<640,tx=right?Math.min(1280-tw-8,x+w+14):Math.max(8,x-tw-14);c.style.left=tx+'px';c.style.top=clamp(y+10,8,SH-th-8)+'px';return}
+  const above=y-th-16>4,ty=above?y-th-16:Math.min(SH-th-6,y+h+16),tx=clamp(x+w/2-tw/2,8,1280-tw-8);
+  c.style.left=tx+'px';c.style.top=ty+'px';c.classList.add(above?'above':'below');c.style.setProperty('--ax',clamp(x+w/2-tx,18,tw-18)+'px')}
+function lesTick(){if(!LES.on||LES.busy)return;placeLes();if(LES.result||LES.passing)return;const st=LESSONS[LES.i].steps[LES.step];
+  if(performance.now()-LES.stepT0>350&&st.done(LES.st)){LES.passing=true;$('lesOk').hidden=false;
+    setTimeout(()=>{if(!LES.on||LES.result)return;if(LES.step+1<LESSONS[LES.i].steps.length)lesStep(LES.step+1);else finishLesson()},850)}}
+/* scratch strokes on Deck B: each change of direction starts a stroke; a forward push "on the beat" lands within 90 ms of one of Deck A's beats */
+function lesFrame(){if(!LES||!LES.on||!LES.sc.on)return;const sc=LES.sc,d=decks[1];
+  if(!d.hand){sc.dir=0;sc.rev=null;return}const a=d.hand.a;
+  const err=()=>{const A=decks[0];if(!A.playing||!A.bpm)return 999;const lat=ctx?(ctx.outputLatency||ctx.baseLatency||0):0,p=dispPos(A)-lat*ratio(A),b=(p-A.first)*A.bpm/60;return(b-Math.round(b))*60/(A.bpm*ratio(A))*1000};
+  if(!sc.dir){if(sc.rev==null){sc.rev=a;sc.revE=err()}else if(Math.abs(a-sc.rev)<0.03)sc.revE=err();if(Math.abs(a-sc.rev)>0.12){sc.dir=Math.sign(a-sc.rev);sc.strokes.push({dir:sc.dir,on:Math.abs(sc.revE)<90});sc.ext=a;sc.extE=err()}return}
+  if((a-sc.ext)*sc.dir>0){sc.ext=a;sc.extE=err();return}if(Math.abs(a-sc.ext)<0.03){sc.extE=err();return}
+  if((sc.ext-a)*sc.dir>0.12){sc.dir=-sc.dir;sc.strokes.push({dir:sc.dir,on:Math.abs(sc.extE)<90});sc.ext=a;sc.extE=err()}}
+$('lesBtn').onclick=()=>$('lessons').classList.contains('open')?closeLessons():openLessons();
+$('lesClose').onclick=closeLessons;
+$('lesQuit').onclick=quitLesson;
+$('lesSkip').onclick=()=>{if(!LES.on||LES.busy||LES.passing)return;LES.skipped=true;if(LES.step+1<LESSONS[LES.i].steps.length)lesStep(LES.step+1);else finishLesson()};
+$('lesAgain').onclick=()=>startLesson(LES.i);
+$('lesNext').onclick=()=>startLesson(LES.i+1);
+$('lesAll').onclick=()=>{quitLesson();openLessons()};
+['libBtn','setupBtn'].forEach(id=>$(id).addEventListener('click',()=>{closeLessons();setTimeout(placeLes,260)}));
+['libClose','setupClose','lesClose'].forEach(id=>$(id).addEventListener('click',()=>setTimeout(placeLes,260)));
+
 renderTip();
 restoreLib();
 document.fonts&&document.fonts.ready.then(refreshAll);
