@@ -307,6 +307,11 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 #stage.v-mixer .deck .fxon{flex:0 0 58px;font-size:19px}
 #stage.v-mixer.short .deck .fxt{flex-basis:54px}
 #stage.v-mixer.short .deck .fxon{flex-basis:50px}
+/* knobs size themselves to the space each panel really has (screen heights vary a lot between phones) */
+#stage.v-mixer .mx-ch{container-type:size}
+#stage.v-mixer .mx-ch .knobs .knob{width:min(120px,calc((100cqh - 132px)/3),calc((100cqw - 172px)/2));height:min(120px,calc((100cqh - 132px)/3),calc((100cqw - 172px)/2))}
+#stage.v-mixer .deck .pane[data-pane=fx]{container-type:size}
+#stage.v-mixer .deck .pane[data-pane=fx] .fxk .knob{width:min(96px,calc((100cqh - 250px)/3),calc(100cqw - 24px));height:min(96px,calc((100cqh - 250px)/3),calc(100cqw - 24px))}
 
 /* PLATTERS view: only the jog wheels and the crossfader */
 #stage.v-plat .mainrow{grid-template-columns:minmax(0,1fr) 250px minmax(0,1fr)}
