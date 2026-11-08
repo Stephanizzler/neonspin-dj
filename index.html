@@ -245,10 +245,11 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 .short .top .vbtn{grid-row:span 2;flex-direction:column;font-size:17px}
 .short .top .vbtn small{font-size:11px}
 .short .strips{padding-right:336px}
-.viewpop{position:absolute;right:10px;top:54px;z-index:40;width:330px;background:#1f1a40;border:1px solid var(--edge-hi);border-radius:16px;box-shadow:0 18px 50px rgba(0,0,0,.7);padding:8px;display:flex;flex-direction:column;gap:6px}
+.viewpop{position:absolute;right:10px;top:54px;z-index:40;width:350px;background:#1f1a40;border:1px solid var(--edge-hi);border-radius:16px;box-shadow:0 18px 50px rgba(0,0,0,.7);padding:8px;display:flex;flex-direction:column;gap:6px}
 .short .viewpop{top:88px}
 .viewpop[hidden]{display:none}
-.viewpop button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;background:var(--well);border:1.5px solid var(--edge-hi);border-radius:12px;padding:12px 14px}
+.viewpop button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;background:var(--well);border:1.5px solid var(--edge-hi);border-radius:12px;padding:9px 14px}
+.short .viewpop{gap:4px;padding:6px}.short .viewpop button{padding:6px 14px}.short .viewpop button b{font-size:17px}
 .viewpop button b{font-size:19px}
 .viewpop button span{font-size:13px;color:var(--muted)}
 .viewpop button.on{border-color:var(--go)}
@@ -323,6 +324,55 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 #stage.v-mixer.short .fader-h{height:60px}
 #stage.v-mixer .fader-h .f-track,#stage.v-plat .fader-h .f-track{height:10px;margin-top:-5px}
 #stage.v-mixer .fader-h .f-cap,#stage.v-plat .fader-h .f-cap{width:62px;margin-left:-31px;border-radius:10px}
+/* DECKS C/D and SAMPLER views: the two extra decks, side by side and big */
+#stage.v-cd .mainrow,#stage.v-samp .mainrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+#stage.v-cd .mixer,#stage.v-samp .mixer{display:none}
+#stage.v-cd .deck,#stage.v-samp .deck{grid-template-rows:minmax(0,1fr);padding:10px}
+#stage.v-cd .deck>:not(.panel),#stage.v-samp .deck>:not(.panel){display:none}
+#stage.v-cd .deck .pane,#stage.v-samp .deck .pane{display:none!important}
+#stage.v-cd .deck .pane.xdeck,#stage.v-samp .deck .pane.xdeck{display:grid!important;grid-template-columns:minmax(0,1fr) 168px;gap:10px;min-height:0}
+#stage.v-cd .xdeck::before,#stage.v-samp .xdeck::before{grid-area:head;content:attr(data-name);font-size:22px;font-weight:800;color:var(--xc);letter-spacing:.02em;line-height:1}
+#stage.v-cd .xdeck>[id^=xg],#stage.v-samp .xdeck>[id^=xg]{grid-area:gain;display:flex;align-items:center;justify-content:center;background:var(--well);border:1px solid var(--edge);border-radius:14px;min-height:0}
+#stage.v-cd .xdeck>[id^=xg] .knob{width:128px;height:128px;padding:6px}
+#stage.v-samp .xdeck>[id^=xg] .knob{width:96px;height:96px;padding:5px}
+#stage.v-cd .xdeck .knob-cap i,#stage.v-samp .xdeck .knob-cap i{top:7%;height:26%;width:5px;margin-left:-2.5px}
+#stage.v-cd .xdeck .knob-wrap .lbl,#stage.v-samp .xdeck .knob-wrap .lbl{font-size:13px}
+/* Decks C/D: track, play, sync, FX */
+#stage.v-cd .xdeck{grid-template-rows:auto minmax(0,1fr);grid-template-areas:"head head" "main gain"}
+#stage.v-cd .xmode,#stage.v-cd .xpads{display:none!important}
+#stage.v-cd .xtrack{grid-area:main;display:grid!important;grid-template-columns:1.25fr 1fr 1fr;grid-template-rows:96px minmax(0,1fr) minmax(0,1fr);grid-template-areas:"info info info" "play sync fxt" "play sync xa";gap:10px;min-height:0}
+#stage.v-cd .xplay{grid-area:play;font-size:60px;border-radius:18px;border-width:2px}
+#stage.v-cd .xinfo{grid-area:info;padding:0 16px;gap:8px;border-radius:14px}
+#stage.v-cd .xinfo b{font-size:22px}
+#stage.v-cd .xinfo small{font-size:13px}
+#stage.v-cd .xbar{height:8px;border-radius:4px}
+#stage.v-cd .xsync{grid-area:sync;font-size:24px;border-radius:16px;border-width:2px}
+#stage.v-cd .xfxt{grid-area:fxt;border-radius:14px;padding:0 14px}
+#stage.v-cd .xfxt span{font-size:12px}
+#stage.v-cd .xfxt b{font-size:22px}
+#stage.v-cd .xtrack>[id^=xa]{grid-area:xa;display:flex;align-items:center;justify-content:center;background:var(--well);border:1px solid var(--edge);border-radius:14px;min-height:0}
+#stage.v-cd .xtrack>[id^=xa] .knob{width:96px;height:96px;padding:5px}
+#stage.v-cd.short .xtrack>[id^=xa] .knob{width:70px;height:70px;padding:4px}
+#stage.v-cd.short .xtrack{grid-template-rows:78px minmax(0,1fr) minmax(0,1fr)}
+/* Sampler: IN / OUT and four big pads, source, FX and gain on the side */
+#stage.v-samp .xdeck{grid-template-rows:auto 54px auto minmax(0,1fr);grid-template-areas:"head head" "pads src" "pads fx" "pads gain"}
+#stage.v-samp .xmode{grid-area:src;display:flex;flex-direction:row}
+#stage.v-samp .xmode [data-x=mtrack],#stage.v-samp .xmode [data-x=mpads]{display:none!important}
+#stage.v-samp .xmode [data-x=msrc]{font-size:15px;border-radius:12px}
+#stage.v-samp .xpads{grid-area:pads;display:grid!important;grid-template-columns:118px minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr) minmax(0,1fr);gap:10px;min-height:0}
+#stage.v-samp .xio{grid-row:1/3;gap:10px}
+#stage.v-samp .xio button{font-size:28px;border-radius:16px;border-width:2px}
+#stage.v-samp .xio button small{font-size:12px;margin-top:6px}
+#stage.v-samp .spad{font-size:38px;border-radius:18px;border-width:2px}
+#stage.v-samp .spad small{font-size:14px;margin-top:4px}
+#stage.v-samp .xtrack{grid-area:fx;display:grid!important;grid-template-columns:1fr;grid-template-rows:54px auto;gap:6px}
+#stage.v-samp .xtrack>.xplay,#stage.v-samp .xtrack>.xinfo,#stage.v-samp .xtrack>.xsync{display:none}
+#stage.v-samp .xfxt{border-radius:12px;padding:0 12px}
+#stage.v-samp .xfxt b{font-size:18px}
+#stage.v-samp .xtrack>[id^=xa]{display:flex;justify-content:center}
+#stage.v-samp .xtrack>[id^=xa] .knob{width:84px;height:84px;padding:4px}
+#stage.v-samp.short .xtrack>[id^=xa] .knob{width:64px;height:64px;padding:3px}
+#stage.v-samp.short .xdeck>[id^=xg] .knob{width:72px;height:72px;padding:4px}
 .led{width:8px;height:8px;border-radius:50%;background:#2a2540;display:inline-block}
 .led.on{background:var(--rec);box-shadow:0 0 6px var(--rec)}
 
@@ -489,6 +539,8 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
     <div class="viewpop" id="viewPop" role="menu" hidden>
       <button data-view="console" role="menuitem"><b>Console</b><span>Everything: decks, mixer and pads</span></button>
       <button data-view="mixer" role="menuitem"><b>Mixer</b><span>Faders, gain, EQ and FX, with big knobs</span></button>
+      <button data-view="cd" role="menuitem"><b>Decks C &amp; D</b><span>Play, sync, FX and gain for the extra decks</span></button>
+      <button data-view="sampler" role="menuitem"><b>Sampler</b><span>Big IN / OUT and sample pads, from a deck or the mic</span></button>
       <button data-view="platters" role="menuitem"><b>Platters</b><span>Jog wheels, crossfader, PLAY and cues, for scratching</span></button>
     </div>
     <section class="strips" id="strips" aria-label="Beat match">
@@ -1118,7 +1170,7 @@ function deckHTML(s){const k=s==='L'?0:1;return`<div class="deck side-${s}" id="
     <div class="pane" data-pane="loop"><button class="pbtn" data-a="lin" data-mid="${s}:lin">IN</button><button class="pbtn" data-a="lout" data-mid="${s}:lout">OUT</button><button class="pbtn" data-a="lhalf" data-mid="${s}:lhalf" aria-label="Halve loop">÷2</button><div class="lsize"><span id="ls${s}">4</span><small>BEATS</small></div><button class="pbtn" data-a="ldbl" data-mid="${s}:ldbl" aria-label="Double loop">×2</button><button class="pbtn go" data-a="lauto" data-mid="${s}:lauto">LOOP</button></div>
     <div class="pane" data-pane="fx"><button class="fxt" data-a="fxtype" data-mid="${s}:fxtype" aria-label="Change effect"><span>EFFECT ⟳</span><b id="fxn${s}">Delay</b></button><div class="fxk" id="fxk${s}"></div><span class="fxv" id="fxv${s}"></span><button class="pbtn fxon" data-a="fxon" data-mid="${s}:fxon">ON</button></div>
     <div class="pane" data-pane="modes"><button class="pbtn" data-a="master" data-mid="${s}:master"><small>leader</small>MASTER</button><button class="pbtn" data-a="key" data-mid="${s}:key"><small>keylock</small>KEY</button><button class="pbtn" data-a="rev" data-mid="${s}:rev"><small>backwards</small>REV</button><button class="pbtn" data-a="brake" data-mid="${s}:brake"><small>stop</small>BRAKE</button><button class="pbtn" data-a="flux" data-mid="${s}:flux"><small>carry on</small>SLIP</button><button class="pbtn" data-a="vinyl" data-mid="${s}:vinyl"><small>scratch</small>VINYL</button><button class="pbtn" data-a="load"><small>library</small>LOAD</button></div>
-    <div class="pane xdeck" data-pane="xd" style="--xc:${DC[k+2]}">
+    <div class="pane xdeck" data-pane="xd" data-name="Deck ${LET[k+2]}" style="--xc:${DC[k+2]}">
       <div class="xmode" role="group" aria-label="Deck ${LET[k+2]} mode"><button data-x="mtrack">TRACK</button><button data-x="mpads">SAMPLER</button><button data-x="msrc" hidden></button></div>
       <div class="xrow xtrack"><button class="xplay" data-x="play" data-mid="${s}:xplay" aria-label="Play or pause deck ${LET[k+2]}">▶</button><button class="xinfo" data-x="load" aria-label="Load a track on deck ${LET[k+2]}"><b id="xt${s}">Deck ${LET[k+2]}</b><span class="xbar"><i id="xp${s}"></i></span><small id="xm${s}"></small></button><button class="xsync" data-x="sync" data-mid="${s}:xsync">SYNC</button><button class="fxt xfxt" data-x="fxtype" aria-label="Change effect on deck ${LET[k+2]}"><span>FX ⟳</span><b id="xfn${s}">Delay</b></button><div id="xa${s}"></div></div>
       <div class="xrow xpads" hidden><div class="xio"><button data-x="sin" data-mid="${s}:xsin">IN<small id="xsrc${s}">from ${LET[k]}</small></button><button data-x="sout" data-mid="${s}:xsout">OUT</button></div>${[0,1,2,3].map(i=>`<button class="spad" data-sp="${i}" data-mid="${s}:xsp${i}"></button>`).join('')}</div>
@@ -1589,8 +1641,10 @@ async function togglePreview(key,getBytes){if(prev.key===key){stopPreview();retu
   catch(e){toast(`Could not play this recording (${e&&e.name||'error'})`,4000)}}
 const pvBtn=key=>`<button class="pv${prev.key===key?' on':''}" aria-label="${prev.key===key?'Stop':'Play'}">${prev.key===key?'■ Stop':'▶ Play'}</button>`;
 /* ---------- views: Console, Mixer, Platters ---------- */
-const VIEWS={console:'Console',mixer:'Mixer',platters:'Platters'};var curView='console';
-function setView(v,quiet){if(!VIEWS[v])v='console';curView=v;const st=$('stage');st.classList.toggle('v-mixer',v==='mixer');st.classList.toggle('v-plat',v==='platters');
+const VIEWS={console:'Console',mixer:'Mixer',platters:'Platters',cd:'Decks C/D',sampler:'Sampler'};var curView='console';
+function setView(v,quiet){if(!VIEWS[v])v='console';if((v==='cd'||v==='sampler')&&!quiet&&needPro('Decks C/D and the sampler'))return;
+  curView=v;const st=$('stage');st.classList.toggle('v-mixer',v==='mixer');st.classList.toggle('v-plat',v==='platters');st.classList.toggle('v-cd',v==='cd');st.classList.toggle('v-samp',v==='sampler');
+  if(v==='cd'||v==='sampler'){for(const k of[2,3])decks[k].xmode=v==='cd'?'track':'pads';refreshAll()}
   $('viewName').textContent=VIEWS[v];document.querySelectorAll('#viewPop [data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
   LS.set('sl-view',v);closeViewPop();layout();try{renderTip()}catch(e){}requestAnimationFrame(layout);
   if(!quiet&&v==='platters')toast('Platters: hold the middle of a record to scratch; the outer ring nudges. PLAY, CUE and hot cues sit beside each platter.',4200)}
