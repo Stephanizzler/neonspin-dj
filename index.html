@@ -591,7 +591,7 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
     </section>
 
     <section class="drawer" id="setup" aria-label="Setup">
-      <div class="dhead"><h2>Setup</h2><span class="tgt">Audio interface, headphone cue, microphone and MIDI controller</span><span class="sp"></span><button class="tb sm" id="setupClose">Close</button></div>
+      <div class="dhead"><h2>Setup</h2><span class="tgt">Audio interface, headphone cue, microphone and MIDI controller · <span class="mono" id="verTxt"></span></span><span class="sp"></span><button class="tb sm" id="setupClose">Close</button></div>
       <div class="setup-body">
         <div class="card">
           <h3>SoundLab DJ Pro</h3>
@@ -1801,7 +1801,19 @@ let installEvt=null;
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;$('installBtn').hidden=false;$('installBtn').classList.add('on')});
 $('installBtn').onclick=async()=>{if(!installEvt)return;installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;$('installBtn').hidden=true};
 addEventListener('appinstalled',()=>{$('installBtn').hidden=true;toast('SoundLab DJ is installed. Open it from your home screen.',4000)});
-if(document.querySelector('link[rel=manifest]')&&'serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+/* updates: check for a new version on every launch and whenever the app comes back to the screen; load it straight away when nothing is playing */
+const APP_VER=13;try{$('verTxt').textContent='version '+APP_VER}catch(e){}
+if(document.querySelector('link[rel=manifest]')&&'serviceWorker' in navigator){
+  const hadSW=!!navigator.serviceWorker.controller;let reloading=false;
+  navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{
+    const check=()=>reg.update().catch(()=>{});check();
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')check()});
+    addEventListener('pageshow',check);setInterval(check,30*60*1000)}).catch(()=>{});
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!hadSW||reloading)return;
+    const busy=decks.some(d=>d.playing)||(typeof rec!=='undefined'&&rec&&rec.state==='recording')||DEMO.on;
+    if(!busy){reloading=true;location.reload()}
+    else toast('A new version of SoundLab DJ is ready. It loads when you stop playing.',5000),
+      (function wait(){if(decks.some(d=>d.playing)||DEMO.on)return setTimeout(wait,3000);reloading=true;location.reload()})()})}
 const standalone=matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches||navigator.standalone;
 if(standalone){$('fsBtn').hidden=true;try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{})}catch(e){}}
 
