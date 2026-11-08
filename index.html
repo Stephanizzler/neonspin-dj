@@ -255,8 +255,29 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 .viewpop button.on b::after{content:' ✓';color:var(--go)}
 
 /* MIXER view: only the mixer, everything larger */
-#stage.v-mixer .mainrow{grid-template-columns:minmax(0,1fr)}
-#stage.v-mixer #dkL,#stage.v-mixer #dkR,#stage.v-mixer #deckL,#stage.v-mixer #deckR{display:none}
+#stage.v-mixer .mainrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr) 96px}
+#stage.v-mixer.short .mainrow{grid-template-rows:minmax(0,1fr) 84px;gap:6px}
+#stage.v-mixer .mixer{grid-column:1/-1;grid-row:1}
+#stage.v-mixer #dkL{grid-row:2;grid-column:1}
+#stage.v-mixer #dkR{grid-row:2;grid-column:2}
+#stage.v-mixer .deck{grid-template-rows:minmax(0,1fr);padding:6px}
+#stage.v-mixer .deck>:not(.panel){display:none}
+#stage.v-mixer .deck .pane{display:none!important}
+#stage.v-mixer .deck .pane[data-pane=fx]{display:flex!important;gap:10px}
+#stage.v-mixer .deck .fxt{flex-basis:128px}
+#stage.v-mixer .deck .fxt span{font-size:11px}
+#stage.v-mixer .deck .fxt b{font-size:19px}
+#stage.v-mixer .deck .fxk{gap:16px}
+#stage.v-mixer .deck .fxk .knob{width:58px;height:58px;padding:4px}
+#stage.v-mixer.short .deck .fxk .knob{width:50px;height:50px;padding:3px}
+#stage.v-mixer .deck .fxk .knob-wrap .lbl{font-size:11px}
+#stage.v-mixer .deck .fxv{font-size:12px}
+#stage.v-mixer .deck .fxon{flex-basis:96px;font-size:18px}
+#stage.v-mixer.short .mixer{grid-template-rows:minmax(0,1fr) 78px;padding:8px;gap:8px}
+#stage.v-mixer.short .mx-ch{padding:6px 12px;gap:4px 16px}
+#stage.v-mixer.short .mx-head{font-size:18px;line-height:24px}
+#stage.v-mixer.short .knobs{gap:6px 24px}
+#stage.v-mixer.short .knob-wrap{gap:1px}
 #stage.v-mixer .mixer{grid-template-columns:minmax(0,1fr) 236px minmax(0,1fr);grid-template-rows:minmax(0,1fr) 100px;gap:10px;padding:10px}
 #stage.v-mixer .mx-ch{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr) auto;align-items:center;justify-items:center;gap:8px 18px;padding:10px 14px}
 #stage.v-mixer #mxR{grid-template-columns:auto minmax(0,1fr)}
@@ -267,7 +288,7 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 #stage.v-mixer #mxR .pfl,#stage.v-mixer #mxR .mx-fd{grid-column:1}
 #stage.v-mixer .mx-fd{grid-row:2;grid-column:2;height:100%;gap:12px}
 #stage.v-mixer .knob{width:104px;height:104px;padding:5px}
-#stage.v-mixer.short .knob{width:84px;height:84px;padding:4px}
+#stage.v-mixer.short .knob{width:74px;height:74px;padding:4px}
 #stage.v-mixer .knob-cap i{top:7%;height:26%;width:5px;margin-left:-2.5px}
 #stage.v-mixer .knob-wrap{gap:4px}
 #stage.v-mixer .knob-wrap .lbl{font-size:13px}
@@ -275,7 +296,10 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 #stage.v-mixer .mx-master>.lbl{font-size:13px}
 #stage.v-mixer .mknobs{gap:6px 14px}
 #stage.v-mixer .mknobs .knob{width:84px;height:84px}
-#stage.v-mixer.short .mknobs .knob{width:66px;height:66px;padding:3px}
+#stage.v-mixer.short .mknobs .knob{width:56px;height:56px;padding:3px}
+#stage.v-mixer.short .mx-master{gap:4px}
+#stage.v-mixer.short .micb{padding:5px 22px}
+#stage.v-mixer.short .curve button{padding:5px 0}
 #stage.v-mixer .micb{font-size:15px;padding:8px 26px;border-radius:10px}
 #stage.v-mixer .curve button{font-size:13px;padding:7px 0;border-radius:8px}
 #stage.v-mixer .vu{width:14px}
@@ -286,16 +310,20 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 #stage.v-mixer .mx-xf .xl{font-size:24px;width:46px;height:42px;border-radius:9px}
 
 /* PLATTERS view: only the jog wheels and the crossfader */
-#stage.v-plat .mainrow{grid-template-columns:minmax(0,1fr) 290px minmax(0,1fr)}
+#stage.v-plat .mainrow{grid-template-columns:minmax(0,1fr) 250px minmax(0,1fr)}
 #stage.v-plat .mx-xf{gap:6px;padding:0 6px}
 #stage.v-plat .mx-xf .xl{width:30px;font-size:19px}
 #stage.v-plat .fader-h .f-cap{width:44px;margin-left:-22px}
-#stage.v-plat .deck{grid-template-rows:minmax(0,1fr);padding:6px}
-#stage.v-plat .deck>:not(.dbody),#stage.v-plat .tcol,#stage.v-plat .tempo{display:none}
+#stage.v-plat .deck{grid-template-rows:minmax(0,1fr) 72px;padding:6px}
+#stage.v-plat.short .deck{grid-template-rows:minmax(0,1fr) 66px}
+#stage.v-plat .deck>:not(.dbody):not(.panel),#stage.v-plat .tempo{display:none}
+#stage.v-plat .deck .pane{display:none!important}
+#stage.v-plat .deck .pane[data-pane=cues]{display:flex!important}
 #stage.v-plat .mixer{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) 120px;background:none;border:0;padding:0}
 #stage.v-plat .mx-ch,#stage.v-plat .mx-master{display:none}
 #stage.v-plat .mx-xf{grid-row:2;margin:0;gap:10px;padding:0 10px}
 #stage.v-mixer .fader-h,#stage.v-plat .fader-h{height:84px}
+#stage.v-mixer.short .fader-h{height:66px}
 #stage.v-mixer .fader-h .f-track,#stage.v-plat .fader-h .f-track{height:10px;margin-top:-5px}
 #stage.v-mixer .fader-h .f-cap,#stage.v-plat .fader-h .f-cap{width:62px;margin-left:-31px;border-radius:10px}
 .led{width:8px;height:8px;border-radius:50%;background:#2a2540;display:inline-block}
@@ -463,8 +491,8 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 
     <div class="viewpop" id="viewPop" role="menu" hidden>
       <button data-view="console" role="menuitem"><b>Console</b><span>Everything: decks, mixer and pads</span></button>
-      <button data-view="mixer" role="menuitem"><b>Mixer</b><span>Just the mixer, with big knobs and faders</span></button>
-      <button data-view="platters" role="menuitem"><b>Platters</b><span>Just the jog wheels and crossfader, for scratching</span></button>
+      <button data-view="mixer" role="menuitem"><b>Mixer</b><span>The mixer and FX, with big knobs and faders</span></button>
+      <button data-view="platters" role="menuitem"><b>Platters</b><span>Jog wheels, crossfader, PLAY and cues, for scratching</span></button>
     </div>
     <section class="strips" id="strips" aria-label="Beat match">
       <div class="zoom"><button id="zOut" aria-label="Zoom out">−</button><button id="zIn" aria-label="Zoom in">+</button></div>
@@ -1568,7 +1596,7 @@ const VIEWS={console:'Console',mixer:'Mixer',platters:'Platters'};var curView='c
 function setView(v,quiet){if(!VIEWS[v])v='console';curView=v;const st=$('stage');st.classList.toggle('v-mixer',v==='mixer');st.classList.toggle('v-plat',v==='platters');
   $('viewName').textContent=VIEWS[v];document.querySelectorAll('#viewPop [data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
   LS.set('sl-view',v);closeViewPop();layout();try{renderTip()}catch(e){}requestAnimationFrame(layout);
-  if(!quiet&&v==='platters')toast('Platters: hold the middle of a record to scratch, the outer ring nudges. Crossfader in the middle.',4200)}
+  if(!quiet&&v==='platters')toast('Platters: hold the middle of a record to scratch; the outer ring nudges. PLAY, CUE and hot cues sit beside each platter.',4200)}
 function closeViewPop(){$('viewPop').hidden=true;$('viewBtn').setAttribute('aria-expanded','false')}
 $('viewBtn').onclick=e=>{e.stopPropagation();const p=$('viewPop');p.hidden=!p.hidden;$('viewBtn').setAttribute('aria-expanded',String(!p.hidden))};
 document.querySelectorAll('#viewPop [data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));
