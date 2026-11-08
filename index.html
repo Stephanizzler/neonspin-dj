@@ -729,7 +729,7 @@ function layout(){const f=$('fit');if(!f)return;const fr=f.getBoundingClientRect
   st.style.left=left+'px';st.style.top=top+'px';applyCam();
   const hud=$('hud');if(hud){hud.style.left=left+'px';hud.style.top=top+'px';hud.style.height=SH+'px';hud.style.transform=BASE}
   Object.assign(TF,{rot,s,ox:fr.left+left,oy:fr.top+top});
-  st.classList.toggle('short',SH<600);sizeJogs();try{placeTip()}catch(e){}}
+  st.classList.toggle('short',SH<700);sizeJogs();try{placeTip()}catch(e){}}
 /* screen point -> console coordinates (handles the sideways view) */
 function localPt(cx,cy){const{rot,s,ox,oy}=TF;const q=rot?{x:(cy-oy)/s,y:(ox-cx)/s}:{x:(cx-ox)/s,y:(cy-oy)/s};return{x:(q.x-CAM.tx)/CAM.z,y:(q.y-CAM.ty)/CAM.z}}
 /* demo camera: zoom the console in on a point; the overlay (#hud) keeps the base transform */
