@@ -580,7 +580,11 @@ function sizeJogs(){for(const s of['L','R']){const c=$('jog'+s);if(!c)continue;c
   const sz=Math.floor(Math.max(80,Math.min(box.clientWidth,box.clientHeight)));c.style.width=c.style.height=sz+'px'}}
 addEventListener('resize',layout);
 if(window.visualViewport)visualViewport.addEventListener('resize',layout);
-addEventListener('orientationchange',()=>setTimeout(layout,250));
+addEventListener('orientationchange',()=>[60,250,600,1200].forEach(t=>setTimeout(layout,t)));
+/* re-measure whenever the screen area really changes size: phones can report a stale width just after rotating */
+if(window.ResizeObserver)new ResizeObserver(()=>layout()).observe(document.getElementById('fit'));
+addEventListener('pageshow',()=>setTimeout(layout,50));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)[50,400].forEach(t=>setTimeout(layout,t))});
 document.addEventListener('fullscreenchange',()=>setTimeout(layout,50));
 /* keep the page itself still: dragging moves the control under your finger, never the page */
 document.addEventListener('touchmove',e=>{if(!e.target.closest('.lib-main,.lib-side,.setup-body,.welcome,#cselPop,.prosheet'))e.preventDefault()},{passive:false});
