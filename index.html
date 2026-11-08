@@ -255,59 +255,56 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 .viewpop button.on b::after{content:' ✓';color:var(--go)}
 
 /* MIXER view: only the mixer, everything larger */
-#stage.v-mixer .mainrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr) 96px}
-#stage.v-mixer.short .mainrow{grid-template-rows:minmax(0,1fr) 84px;gap:6px}
-#stage.v-mixer .mixer{grid-column:1/-1;grid-row:1}
-#stage.v-mixer #dkL{grid-row:2;grid-column:1}
-#stage.v-mixer #dkR{grid-row:2;grid-column:2}
-#stage.v-mixer .deck{grid-template-rows:minmax(0,1fr);padding:6px}
-#stage.v-mixer .deck>:not(.panel){display:none}
-#stage.v-mixer .deck .pane{display:none!important}
-#stage.v-mixer .deck .pane[data-pane=fx]{display:flex!important;gap:10px}
-#stage.v-mixer .deck .fxt{flex-basis:128px}
-#stage.v-mixer .deck .fxt span{font-size:11px}
-#stage.v-mixer .deck .fxt b{font-size:19px}
-#stage.v-mixer .deck .fxk{gap:16px}
-#stage.v-mixer .deck .fxk .knob{width:58px;height:58px;padding:4px}
-#stage.v-mixer.short .deck .fxk .knob{width:50px;height:50px;padding:3px}
-#stage.v-mixer .deck .fxk .knob-wrap .lbl{font-size:11px}
-#stage.v-mixer .deck .fxv{font-size:12px}
-#stage.v-mixer .deck .fxon{flex-basis:96px;font-size:18px}
-#stage.v-mixer.short .mixer{grid-template-rows:minmax(0,1fr) 78px;padding:8px;gap:8px}
-#stage.v-mixer.short .mx-ch{padding:6px 12px;gap:4px 16px}
-#stage.v-mixer.short .mx-head{font-size:18px;line-height:24px}
-#stage.v-mixer.short .knobs{gap:6px 24px}
-#stage.v-mixer.short .knob-wrap{gap:1px}
-#stage.v-mixer .mixer{grid-template-columns:minmax(0,1fr) 236px minmax(0,1fr);grid-template-rows:minmax(0,1fr) 100px;gap:10px;padding:10px}
-#stage.v-mixer .mx-ch{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr) auto;align-items:center;justify-items:center;gap:8px 18px;padding:10px 14px}
+/* layout: FX A | channel A | channel B | FX B, with a short crossfader under the channels.
+   Only what matters while mixing: channel faders, crossfader, gain, EQ (+filter) and FX. */
+#stage.v-mixer .mainrow{grid-template-columns:200px minmax(0,1fr) 200px;gap:8px}
+#stage.v-mixer.short .mainrow{grid-template-columns:184px minmax(0,1fr) 184px;gap:6px}
+#stage.v-mixer #dkL{grid-column:1;grid-row:1}
+#stage.v-mixer .mixer{grid-column:2;grid-row:1;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr) 92px;gap:10px;padding:10px}
+#stage.v-mixer.short .mixer{grid-template-rows:minmax(0,1fr) 72px;gap:8px;padding:8px}
+#stage.v-mixer #dkR{grid-column:3;grid-row:1}
+#stage.v-mixer .mx-master{display:none}
+/* channels: knobs on the outside, fader on the inside */
+#stage.v-mixer .mx-ch{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr) auto;align-items:center;justify-items:center;gap:6px 14px;padding:8px 12px}
 #stage.v-mixer #mxR{grid-template-columns:auto minmax(0,1fr)}
-#stage.v-mixer .mx-head{grid-column:1/-1;font-size:22px;line-height:30px;padding:0 16px;border-radius:9px}
-#stage.v-mixer .knobs{grid-row:2/4;grid-column:1;grid-template-columns:repeat(3,1fr);gap:14px 26px;align-self:center}
+#stage.v-mixer .mx-head{grid-column:1/-1;font-size:20px;line-height:28px;padding:0 16px;border-radius:9px}
+#stage.v-mixer .knobs{grid-row:2/4;grid-column:1;grid-template-columns:repeat(2,1fr);gap:10px 22px;align-self:center}
 #stage.v-mixer #mxR .knobs{grid-column:2}
-#stage.v-mixer .mx-ch .pfl{grid-row:3;grid-column:2;font-size:16px;padding:10px 22px;border-radius:11px}
+#stage.v-mixer .mx-fd{grid-row:2;grid-column:2;height:100%;gap:10px}
 #stage.v-mixer #mxR .pfl,#stage.v-mixer #mxR .mx-fd{grid-column:1}
-#stage.v-mixer .mx-fd{grid-row:2;grid-column:2;height:100%;gap:12px}
-#stage.v-mixer .knob{width:104px;height:104px;padding:5px}
-#stage.v-mixer.short .knob{width:74px;height:74px;padding:4px}
+#stage.v-mixer .mx-ch .pfl{grid-row:3;grid-column:2;font-size:13px;padding:6px 16px}
+#stage.v-mixer .knob{width:120px;height:120px;padding:6px}
+#stage.v-mixer.short .knob{width:84px;height:84px;padding:4px}
+#stage.v-mixer.short .knobs{gap:2px 22px}
+#stage.v-mixer.short .knob-wrap{gap:0}
+#stage.v-mixer.short .mx-head{font-size:17px;line-height:22px}
 #stage.v-mixer .knob-cap i{top:7%;height:26%;width:5px;margin-left:-2.5px}
-#stage.v-mixer .knob-wrap{gap:4px}
+#stage.v-mixer .knob-wrap{gap:3px}
 #stage.v-mixer .knob-wrap .lbl{font-size:13px}
-#stage.v-mixer .mx-master{gap:8px}
-#stage.v-mixer .mx-master>.lbl{font-size:13px}
-#stage.v-mixer .mknobs{gap:6px 14px}
-#stage.v-mixer .mknobs .knob{width:84px;height:84px}
-#stage.v-mixer.short .mknobs .knob{width:56px;height:56px;padding:3px}
-#stage.v-mixer.short .mx-master{gap:4px}
-#stage.v-mixer.short .micb{padding:5px 22px}
-#stage.v-mixer.short .curve button{padding:5px 0}
-#stage.v-mixer .micb{font-size:15px;padding:8px 26px;border-radius:10px}
-#stage.v-mixer .curve button{font-size:13px;padding:7px 0;border-radius:8px}
-#stage.v-mixer .vu{width:14px}
-#stage.v-mixer .fader-v{width:74px}
+#stage.v-mixer .vu{width:12px}
+#stage.v-mixer .fader-v{width:78px}
 #stage.v-mixer .fader-v .f-track{width:10px;margin-left:-5px}
-#stage.v-mixer .fader-v .f-cap{height:38px;margin-top:-19px;border-radius:9px}
-#stage.v-mixer .mx-xf{margin:0;gap:16px;padding:0 16px}
-#stage.v-mixer .mx-xf .xl{font-size:24px;width:46px;height:42px;border-radius:9px}
+#stage.v-mixer .fader-v .f-cap{height:40px;margin-top:-20px;border-radius:9px}
+/* a short crossfader, centred under the channels */
+#stage.v-mixer .mx-xf{justify-self:center;width:min(440px,70%);box-sizing:border-box;margin:0;gap:10px;padding:0 12px}
+#stage.v-mixer .mx-xf .xl{font-size:20px;width:38px;height:36px;border-radius:8px}
+/* FX units on the outer sides, stacked vertically */
+#stage.v-mixer .deck{grid-template-rows:minmax(0,1fr);padding:8px}
+#stage.v-mixer .deck>:not(.panel){display:none}
+#stage.v-mixer .deck .panel{display:flex}
+#stage.v-mixer .deck .pane{display:none!important}
+#stage.v-mixer .deck .pane[data-pane=fx]{display:flex!important;flex-direction:column;align-items:stretch;gap:8px;flex:1}
+#stage.v-mixer .deck .fxt{flex:0 0 64px;padding:0 12px}
+#stage.v-mixer .deck .fxt span{font-size:11px}
+#stage.v-mixer .deck .fxt b{font-size:20px}
+#stage.v-mixer .deck .fxk{flex:1;flex-direction:column;justify-content:space-evenly;gap:4px;min-height:0}
+#stage.v-mixer .deck .fxk .knob{width:96px;height:96px;padding:5px}
+#stage.v-mixer.short .deck .fxk .knob{width:70px;height:70px;padding:4px}
+#stage.v-mixer .deck .fxk .knob-wrap .lbl{font-size:12px}
+#stage.v-mixer .deck .fxv{flex:0 0 auto;font-size:11px;white-space:normal;text-align:center}
+#stage.v-mixer .deck .fxon{flex:0 0 58px;font-size:19px}
+#stage.v-mixer.short .deck .fxt{flex-basis:54px}
+#stage.v-mixer.short .deck .fxon{flex-basis:50px}
 
 /* PLATTERS view: only the jog wheels and the crossfader */
 #stage.v-plat .mainrow{grid-template-columns:minmax(0,1fr) 250px minmax(0,1fr)}
@@ -323,7 +320,7 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 #stage.v-plat .mx-ch,#stage.v-plat .mx-master{display:none}
 #stage.v-plat .mx-xf{grid-row:2;margin:0;gap:10px;padding:0 10px}
 #stage.v-mixer .fader-h,#stage.v-plat .fader-h{height:84px}
-#stage.v-mixer.short .fader-h{height:66px}
+#stage.v-mixer.short .fader-h{height:60px}
 #stage.v-mixer .fader-h .f-track,#stage.v-plat .fader-h .f-track{height:10px;margin-top:-5px}
 #stage.v-mixer .fader-h .f-cap,#stage.v-plat .fader-h .f-cap{width:62px;margin-left:-31px;border-radius:10px}
 .led{width:8px;height:8px;border-radius:50%;background:#2a2540;display:inline-block}
@@ -491,7 +488,7 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 
     <div class="viewpop" id="viewPop" role="menu" hidden>
       <button data-view="console" role="menuitem"><b>Console</b><span>Everything: decks, mixer and pads</span></button>
-      <button data-view="mixer" role="menuitem"><b>Mixer</b><span>The mixer and FX, with big knobs and faders</span></button>
+      <button data-view="mixer" role="menuitem"><b>Mixer</b><span>Faders, gain, EQ and FX, with big knobs</span></button>
       <button data-view="platters" role="menuitem"><b>Platters</b><span>Jog wheels, crossfader, PLAY and cues, for scratching</span></button>
     </div>
     <section class="strips" id="strips" aria-label="Beat match">
