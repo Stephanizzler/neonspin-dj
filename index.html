@@ -1184,7 +1184,9 @@ function route(){if(!G)return;const dst=ctx.destination;
 /* ---------- deck actions ---------- */
 function setTempo(d){post({t:'tempo',d:d.k,rate:rate(d)})}
 function seek(d,t){t=clamp(t,0,Math.max(0,d.dur-0.01));d.pos=t;d.recv=performance.now();if(!d.playing)d.v=0;d.seq++;post({t:'seek',d:d.k,pos:t,seq:d.seq})}
-async function togglePlay(d){if(d.loading){toast('The demo track is still loading');return}if(!d.buf){openLib(d.k);return}await ensureAudio();
+let trHintAt=-1e9;function trHint(d){if(!(TR.on&&!TR.held&&curView==='platters'&&d.k===(SCR.deck==='A'?0:1)))return;const now=performance.now();if(now-trHintAt<15000)return;trHintAt=now;
+  toast(`TRANSFORMER is on: Deck ${d.letter} plays only while you hold the TRANSFORMER pad. Switch TRANSFORMER off to hear it all the time.`,4500)}
+async function togglePlay(d){if(!d.playing)try{trHint(d)}catch(e){}if(d.loading){toast('The demo track is still loading');return}if(!d.buf){openLib(d.k);return}await ensureAudio();
   if(!d.playing&&d.dur&&dispPos(d)>=d.dur-0.06)seek(d,d.cue<d.dur-0.06?d.cue:0);   /* at the end: start again */
   d.playing=!d.playing;post({t:'play',d:d.k,on:d.playing});refreshAll()}
 async function cueDown(d,sh){if(!d.buf)return;await ensureAudio();const p=dispPos(d);
@@ -1398,7 +1400,7 @@ function setupJog(s){
   const weight=r=>clamp(r-0.12,0.05,1);
   c.addEventListener('pointerdown',e=>{if(stage.classList.contains('learning')||mode==='bend')return;const dd=mode?d:sideDeck(s);if(!dd.buf)return;const p=polar(e);if(p.r>1.02)return;
     ensureAudio();try{c.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();
-    if(!mode){d=dd;mode=(!d.playing||curView==='platters'||(d.vinyl&&p.r<0.8))?'scratch':'bend';d.omega=0;lastT=e.timeStamp;c.style.cursor='grabbing';
+    if(!mode){d=dd;try{trHint(d)}catch(_){}mode=(!d.playing||curView==='platters'||(d.vinyl&&p.r<0.8))?'scratch':'bend';d.omega=0;lastT=e.timeStamp;c.style.cursor='grabbing';
       if(mode==='scratch'){d.touching=true;d.rel=null;d.hand={a:p.a,off:jogAng(d)-p.a};hist.length=0;hv=0;post({t:'touch',d:d.k,on:true})}
       else{d.jogActive=true;bendId=e.pointerId;lastA=p.a;return}}
     ptrs.set(e.pointerId,{a:p.a,w:weight(p.r)})});
@@ -1457,6 +1459,7 @@ function drawJog(s){
   g.restore();
   g.fillStyle='#0a0818';arc(R*0.13);g.fill();g.fillStyle=on?col:'#625d8f';g.font=`800 ${Math.round(R*0.15)}px Outfit,sans-serif`;g.textAlign='center';g.textBaseline='middle';g.fillText(d.letter,0,R*0.01);
   if(d.touching||d.jogActive||d.tempTouch){g.strokeStyle='#ffffff';g.globalAlpha=0.75;g.lineWidth=R*0.014;arc(d.jogActive?R*0.93:R*0.8);g.stroke();g.globalAlpha=1}
+  if(on&&typeof TR!=='undefined'&&TR.on&&!TR.held&&curView==='platters'&&d.k===(SCR.deck==='A'?0:1)){g.fillStyle='#ff4d5e';g.font=`800 ${Math.round(R*0.075)}px Outfit,sans-serif`;g.textAlign='center';g.fillText('MUTED · HOLD PAD',0,R*0.6)}
   if(d.rev||d.flux||d.roll){g.fillStyle=d.rev?'#ff4d5e':'#a29dcc';g.font=`700 ${Math.round(R*0.075)}px Outfit,sans-serif`;g.fillText(d.roll?'STUTTER':d.rev?'REVERSE':'SLIP',0,-R*0.58)}
   if(!on){g.fillStyle='#a29dcc';g.font=`600 ${Math.round(R*0.085)}px Outfit,sans-serif`;g.fillText(d.loading?'LOADING DEMO…':'LOAD A TRACK',0,R*0.58)}
 }
@@ -2011,7 +2014,7 @@ addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;$('in
 $('installBtn').onclick=async()=>{if(!installEvt)return;installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;$('installBtn').hidden=true};
 addEventListener('appinstalled',()=>{$('installBtn').hidden=true;toast('SoundLab DJ is installed. Open it from your home screen.',4000)});
 /* updates: check for a new version on every launch and whenever the app comes back to the screen; load it straight away when nothing is playing */
-const APP_VER=23;try{$('verTxt').textContent='version '+APP_VER}catch(e){}
+const APP_VER=24;try{$('verTxt').textContent='version '+APP_VER}catch(e){}
 if(document.querySelector('link[rel=manifest]')&&'serviceWorker' in navigator){
   const hadSW=!!navigator.serviceWorker.controller;let reloading=false;
   navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{
@@ -2389,7 +2392,7 @@ function renderLessons(){const pr=lesProg();let tot=0;const g=$('lesGrid');g.inn
     b.innerHTML=`<span class="n">${i+1} · ${l.lvl}</span><b>${l.title}</b><p>${l.about}</p><span class="st" aria-label="${s} of 3 stars">${starStr(s)}</span>`;b.onclick=()=>startLesson(i);g.appendChild(b)});
   $('lesTot').textContent=`★ ${tot} of ${LESSONS.length*3} stars`}
 async function startLesson(i){if(DEMO.on||!LESSONS[i])return;closeLessons();closeLib();closeSetup();if(tipState.on)setTips(false);
-  const l=LESSONS[i];Object.assign(LES,{on:true,busy:true,i,q:{},h:{},skipped:false,passing:false,result:null,sc:{strokes:[],edges:[],fr:[],ah:[]}});renderLes();
+  const l=LESSONS[i];if(!LES.on)LES.saved={tr:TR.on,battle:SCR.battle};Object.assign(LES,{on:true,busy:true,i,q:{},h:{},skipped:false,passing:false,result:null,sc:{strokes:[],edges:[],fr:[],ah:[]}});renderLes();
   try{await ensureAudio();await demoPrepare();view.L=0;view.R=1;setView(l.view||'console',true);if(l.prep)await l.prep();refreshAll()}catch(e){console.error(e)}
   if(!LES.on||LES.i!==i)return;LES.busy=false;LES.t0=performance.now();lesStep(0)}
 function lesStep(n){const l=LESSONS[LES.i],st=l.steps[n];Object.assign(LES,{step:n,passing:false,h:{},stepT0:performance.now()});LES.st=st.init?st.init():{};
@@ -2398,7 +2401,7 @@ function finishLesson(){const l=LESSONS[LES.i],secs=(performance.now()-LES.t0)/1
   const stars=l.stars?l.stars(r):r.skipped?1:secs<=l.t[0]?3:secs<=l.t[1]?2:1;
   const pr=lesProg(),old=pr[l.id]||{};pr[l.id]={stars:Math.max(stars,old.stars||0),best:Math.min(secs,old.best||1e9),last:Date.now()};LS.set('sl-lessons',pr);
   LES.result={stars,secs,txt:l.result?l.result(r):'',better:!!old.stars&&stars>old.stars};renderLes()}
-function quitLesson(){LES.on=false;LES.result=null;LES.sc.on=false;$('lesCard').hidden=$('lesRing').hidden=true;renderTip()}
+function quitLesson(){const sv=LES.saved;LES.on=false;LES.result=null;LES.sc.on=false;LES.saved=null;if(sv){if(TR.on!==sv.tr)setTransformer(sv.tr);if(SCR.battle!==sv.battle)setBattle(sv.battle)}$('lesCard').hidden=$('lesRing').hidden=true;renderTip()}
 function renderLes(){const l=LESSONS[LES.i];if(!LES.on)return;$('lesCard').hidden=false;
   const res=!!LES.result;$('lesRes').hidden=!res;$('lesRow').hidden=res;$('lesOk').hidden=true;$('lesCard').classList.toggle('done',res);
   if(res){const r=LES.result;$('lesHead').textContent=`Lesson ${LES.i+1} · ${l.title}`;$('lesText').innerHTML=r.stars===3?'<b>Lesson complete. Perfect!</b>':'<b>Lesson complete!</b>';
