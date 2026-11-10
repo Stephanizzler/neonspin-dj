@@ -502,6 +502,8 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 .toast.show{opacity:1}
 
 /* demo */
+#zoomLayer{position:absolute;left:0;top:0;width:1280px;height:800px;transform-origin:0 0;z-index:65;pointer-events:none}
+#zoomChip{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);pointer-events:auto;background:#1f1a40;border:1.5px solid var(--edge-hi);border-radius:999px;padding:10px 20px;font-size:16px;font-weight:700;color:var(--ink);box-shadow:0 8px 24px rgba(0,0,0,.6)}
 #hud{position:absolute;left:0;top:0;width:1280px;height:800px;transform-origin:0 0;z-index:70;pointer-events:auto}
 .hud-top{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center;background:rgba(10,8,24,.88);border:1px solid var(--edge-hi);border-radius:999px;padding:6px 8px 6px 16px;box-shadow:0 10px 30px rgba(0,0,0,.6)}
 .hud-badge{font-weight:800;color:var(--go);letter-spacing:.16em;font-size:13px}
@@ -755,6 +757,7 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
     <div class="tapfx" id="tapfx"></div>
     <div class="toast" id="toast"></div>
   </div>
+  <div id="zoomLayer"><button id="zoomChip" hidden>⤢ Reset zoom</button></div>
   <div id="hud" hidden>
     <div class="hud-top"><span class="hud-badge">DEMO</span><div class="hud-prog"><i id="hudProg"></i></div><button id="hudPause">Pause</button><button id="hudSkip">Skip demo</button></div>
     <div class="hud-cap" id="hudCap" aria-live="polite"></div>
@@ -791,7 +794,7 @@ function layout(){const f=$('fit');if(!f)return;const fr=f.getBoundingClientRect
   if(rot){left=(W-SH*s)/2+SH*s;top=(H-1280*s)/2;BASE=`rotate(90deg) scale(${s})`}
   else{left=(W-1280*s)/2;top=(H-SH*s)/2;BASE=`scale(${s})`}
   st.style.left=left+'px';st.style.top=top+'px';applyCam();
-  const hud=$('hud');if(hud){hud.style.left=left+'px';hud.style.top=top+'px';hud.style.height=SH+'px';hud.style.transform=BASE}
+  for(const id of['hud','zoomLayer']){const h=$(id);if(h){h.style.left=left+'px';h.style.top=top+'px';h.style.height=SH+'px';h.style.transform=BASE}}
   Object.assign(TF,{rot,s,ox:fr.left+left,oy:fr.top+top});
   st.classList.toggle('short',SH<700);sizeJogs();try{placeTip()}catch(e){}}
 /* screen point -> console coordinates (handles the sideways view) */
@@ -1109,7 +1112,8 @@ function applyMix(k){if(!G)return;const c=mix.ch[k],n=G.ch[k],t=ctx.currentTime,
   n.lp.Q.value=f<-0.02?1.1:0.7;n.hp.Q.value=f>0.02?1.1:0.7;
   n.fader.gain.setTargetAtTime(c.fader<=0?0:Math.pow(c.fader,1.6),t,tc);n.pfl.gain.setTargetAtTime(c.pfl?1:0,t,0.005)}
 var SCR={deck:'B',battle:false,hamster:LS.get('sl-hamster',false),cutIn:0.03,auto:'off',prevCurve:'blend',lastA:null,v:0,cur:null};
-function xfGains(){const t=((SCR.hamster?-mix.xf:mix.xf)+1)/2;if(mix.curve==='battle'){const c=SCR.cutIn;return[t<1-c?1:0,t>c?1:0]}if(mix.curve==='cut')return[clamp((1-t)*14,0,1),clamp(t*14,0,1)];return[Math.cos(t*Math.PI/2),Math.sin(t*Math.PI/2)]}
+const hamOn=()=>SCR.hamster&&typeof curView!=='undefined'&&curView==='platters';
+function xfGains(){const t=((hamOn()?-mix.xf:mix.xf)+1)/2;if(mix.curve==='battle'){const c=SCR.cutIn;return[t<1-c?1:0,t>c?1:0]}if(mix.curve==='cut')return[clamp((1-t)*14,0,1),clamp(t*14,0,1)];return[Math.cos(t*Math.PI/2),Math.sin(t*Math.PI/2)]}
 function applyXf(){if(!G)return;const[gl,gr]=xfGains(),t=ctx.currentTime,tc=mix.curve==='battle'?0.0012:0.004;G.ch.forEach((n,k)=>n.xf.gain.setTargetAtTime(k>=2?1:k%2===0?gl:gr,t,tc));if(typeof LES!=='undefined'&&LES&&LES.on)lesXf(gr>0.5)}
 function applyMaster(){if(!G)return;const t=ctx.currentTime;G.masterG.gain.setTargetAtTime(mix.master*1.25,t,0.01);
   G.cueA.gain.setTargetAtTime(Math.cos(mix.cueMix*Math.PI/2),t,0.01);G.cueB.gain.setTargetAtTime(Math.sin(mix.cueMix*Math.PI/2),t,0.01);
@@ -1790,7 +1794,7 @@ const pvBtn=key=>`<button class="pv${prev.key===key?' on':''}" aria-label="${pre
 /* ---------- scratch & battle: battle cut curve, hamster, cut pad, spring-back fader, auto crossfader ----------
    physical fader position = what the cap shows (mix.xf); with HAMSTER the decks swap ends, so the curve reads -mix.xf */
 const scrDeckIx=()=>SCR.deck==='A'?0:1, beatDeckIx=()=>SCR.deck==='A'?1:0;
-const physOf=x=>SCR.hamster?-x:x;
+const physOf=x=>hamOn()?-x:x;
 const restPhys=()=>physOf(SCR.deck==='B'?-1:1);   /* closed on the scratch deck: only the beat plays */
 function setBattle(on){if(on===SCR.battle)return;SCR.battle=on;
   if(on){SCR.prevCurve=mix.curve==='battle'?'blend':mix.curve;mix.curve='battle';xfader.set(restPhys())}else{mix.curve=SCR.prevCurve||'blend';cutPadRelease(true)}
@@ -1801,7 +1805,7 @@ function renderScr(){const x=$('xlock');x.classList.toggle('battle',SCR.battle);
   x.querySelectorAll('[data-xm]').forEach(b=>b.classList.toggle('on',b.dataset.xm===SCR.auto));
   $('cutIn').value=Math.round(SCR.cutIn*100);$('cutInV').textContent=Math.round(SCR.cutIn*100)+'%';$('cutPadSub').textContent=`hold to open Deck ${SCR.deck}`;
   const bt=SCR.deck==='A'?'B':'A';$('xlHint').textContent=SCR.auto!=='off'?`Scratch Deck ${SCR.deck}: the crossfader ${SCR.auto==='fwd'?'opens only while you push the record forward':'chops your scratch in time with the beat'}. Touch the crossfader to stop.`:`Deck ${bt} plays the beat, Deck ${SCR.deck} holds your scratch sample. Turn on BATTLE FADER for a razor-sharp crossfader and a CUT pad.`;
-  const L=$('xlL'),R=$('xlR');L.textContent=SCR.hamster?'B':'A';L.style.background=SCR.hamster?'var(--b)':'var(--a)';R.textContent=SCR.hamster?'A':'B';R.style.background=SCR.hamster?'var(--a)':'var(--b)'}
+  const h=hamOn(),L=$('xlL'),R=$('xlR');L.textContent=h?'B':'A';L.style.background=h?'var(--b)':'var(--a)';R.textContent=h?'A':'B';R.style.background=h?'var(--a)':'var(--b)'}
 /* CUT pad: a finger landing opens the scratch deck; another finger while it's open gives a quick click (crab scratch) */
 const padPtrs=new Set();let padClick=null;
 function cutPadRelease(force){if(force)padPtrs.clear();if(padPtrs.size)return;clearTimeout(padClick);$('cutPad').classList.remove('on');if(SCR.battle)xfader.set(restPhys())}
@@ -1826,10 +1830,24 @@ function xlockFrame(){if(SCR.auto==='off'||curView!=='platters')return;const H=d
   else{SCR.lastA=null;SCR.v=0}
   if(open!==SCR.cur){SCR.cur=open;xfader.set(open?0:restPhys())}}
 renderScr();
+/* ---------- two-finger zoom: pinch on the panels (not on a control) to zoom in, drag with both fingers to move around ---------- */
+const PZ=new Map();let pinch=null;
+const NOZOOM='button,input,select,label,a,.knob,.fader,.jog,.ov,.pad,.spad,.cutpad,.drawer,.viewpop,.tip,.homecard,.prosheet,.welcome,#hud,#zoomChip';
+function viewPt(cx,cy){const{rot,s,ox,oy}=TF;return rot?{x:(cy-oy)/s,y:(ox-cx)/s}:{x:(cx-ox)/s,y:(cy-oy)/s}}
+function clampCam(){CAM.z=clamp(CAM.z,1,3);CAM.tx=clamp(CAM.tx,1280*(1-CAM.z),0);CAM.ty=clamp(CAM.ty,SH*(1-CAM.z),0);applyCam();$('zoomChip').hidden=CAM.z<=1.001}
+function resetZoom(){try{if(DEMO.on)return}catch(e){}CAM={z:1,tx:0,ty:0};pinch=null;PZ.clear();applyCam();$('zoomChip').hidden=true}
+const pinchGeo=()=>{const[a,b]=[...PZ.values()];return{m:{x:(a.x+b.x)/2,y:(a.y+b.y)/2},d:Math.hypot(a.x-b.x,a.y-b.y)}};
+$('stage').addEventListener('pointerdown',e=>{if(DEMO.on||e.target.closest(NOZOOM))return;PZ.set(e.pointerId,viewPt(e.clientX,e.clientY));
+  if(PZ.size===2){const g=pinchGeo();pinch={d0:g.d,z0:CAM.z,c:{x:(g.m.x-CAM.tx)/CAM.z,y:(g.m.y-CAM.ty)/CAM.z}}}});
+addEventListener('pointermove',e=>{if(!PZ.has(e.pointerId))return;PZ.set(e.pointerId,viewPt(e.clientX,e.clientY));if(!pinch||PZ.size<2)return;
+  const g=pinchGeo();CAM.z=clamp(pinch.z0*g.d/Math.max(20,pinch.d0),1,3);CAM.tx=g.m.x-pinch.c.x*CAM.z;CAM.ty=g.m.y-pinch.c.y*CAM.z;clampCam()});
+const pzEnd=e=>{if(!PZ.delete(e.pointerId))return;if(PZ.size<2)pinch=null;if(!PZ.size&&CAM.z<1.08)resetZoom()};
+addEventListener('pointerup',pzEnd);addEventListener('pointercancel',pzEnd);
+$('zoomChip').onclick=resetZoom;
 /* ---------- views: Console, Mixer, Platters ---------- */
 const VIEWS={console:'Console',mixer:'Mixer',platters:'Battle',cd:'Decks C/D',sampler:'Sampler'};var curView='console';
 function setView(v,quiet){if(!VIEWS[v])v='console';if((v==='cd'||v==='sampler')&&!quiet&&needPro('Decks C/D and the sampler'))return;
-  if(v!=='platters'){if(SCR.battle)setBattle(false);if(SCR.auto!=='off'){SCR.auto='off';renderScr()}}curView=v;const st=$('stage');st.classList.toggle('v-mixer',v==='mixer');st.classList.toggle('v-plat',v==='platters');st.classList.toggle('v-cd',v==='cd');st.classList.toggle('v-samp',v==='sampler');
+  if(v!=='platters'){if(SCR.battle)setBattle(false);if(SCR.auto!=='off'){SCR.auto='off';renderScr()}}const hamWas=hamOn();curView=v;if(hamWas!==hamOn())xfader.set(-mix.xf);try{renderScr()}catch(e){}resetZoom();const st=$('stage');st.classList.toggle('v-mixer',v==='mixer');st.classList.toggle('v-plat',v==='platters');st.classList.toggle('v-cd',v==='cd');st.classList.toggle('v-samp',v==='sampler');
   if(v==='cd'||v==='sampler'){for(const k of[2,3])decks[k].xmode=v==='cd'?'track':'pads';refreshAll()}
   $('viewName').textContent=VIEWS[v];document.querySelectorAll('#viewPop [data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
   LS.set('sl-view',v);closeViewPop();layout();try{renderTip()}catch(e){}requestAnimationFrame(layout);
@@ -1983,7 +2001,7 @@ addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;$('in
 $('installBtn').onclick=async()=>{if(!installEvt)return;installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;$('installBtn').hidden=true};
 addEventListener('appinstalled',()=>{$('installBtn').hidden=true;toast('SoundLab DJ is installed. Open it from your home screen.',4000)});
 /* updates: check for a new version on every launch and whenever the app comes back to the screen; load it straight away when nothing is playing */
-const APP_VER=19;try{$('verTxt').textContent='version '+APP_VER}catch(e){}
+const APP_VER=20;try{$('verTxt').textContent='version '+APP_VER}catch(e){}
 if(document.querySelector('link[rel=manifest]')&&'serviceWorker' in navigator){
   const hadSW=!!navigator.serviceWorker.controller;let reloading=false;
   navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{
@@ -2110,13 +2128,13 @@ async function demoStrokes(d,P,cb,grid){const bl=60/(decks[0].bpm*ratio(decks[0]
       if(cb)cb(i,Math.sign(disp),u,performance.now()-T0);if(u<1)requestAnimationFrame(step);else res()};step()})}}
   finally{d.hand=null;d.touching=false;post({t:'touch',d:d.k,on:false});demoPad(false)}}
 function demoPad(open){if(!SCR.battle&&SCR.auto==='off'){return}if(SCR.auto!=='off')return;const was=$('cutPad').classList.contains('on');if(was===open)return;$('cutPad').classList.toggle('on',open);xfader.set(open?0:restPhys())}
-async function startDemo(){if(DEMO.on)return;if(LES.on)quitLesson();if(curView!=='console')setView('console',true);ensureAudio().catch(()=>{});closeLib();closeSetup();$('welcome').hidden=true;
+async function startDemo(){if(DEMO.on)return;const hamSaved=SCR.hamster;if(LES.on)quitLesson();if(curView!=='console')setView('console',true);ensureAudio().catch(()=>{});closeLib();closeSetup();$('welcome').hidden=true;
   DEMO.on=true;DEMO.abort=false;DEMO.paused=false;$('hudPause').textContent='Pause';$('hudProg').style.width='0';$('hudCap').innerHTML='Getting the decks ready…';
   $('hud').hidden=false;layout();placeTip();const st=$('stage');
   try{await ensureAudio();await demoPrepare();st.style.transition='transform .9s cubic-bezier(.45,0,.2,1)';await runDemo()}
   catch(e){if(e!==ABORT)console.error(e)}
   finally{DEMO.on=false;DEMO.paused=false;st.style.transition='transform .6s ease';focus(null);setTimeout(()=>{st.style.transition=''},700);
-    $('hud').hidden=true;try{closeLessons();$('viewPop').hidden=true;if(curView!=='console')setView('console',true);await demoPrepare();xfader.set(0);decks.forEach(d=>{restorePrep(d);if(d.buf)seek(d,d.cue)})}catch(e){}refreshAll();renderTip();
+    $('hud').hidden=true;SCR.hamster=hamSaved;try{renderScr()}catch(e){}try{closeLessons();$('viewPop').hidden=true;if(curView!=='console')setView('console',true);await demoPrepare();xfader.set(0);decks.forEach(d=>{restorePrep(d);if(d.buf)seek(d,d.cue)})}catch(e){}refreshAll();renderTip();
     if(!LS.get('ns-onboarded',false)){pane('level');$('welcome').hidden=false}}}
 $('hudSkip').onclick=()=>{DEMO.abort=true;DEMO.paused=false};
 $('hudPause').onclick=()=>{DEMO.paused=!DEMO.paused;$('hudPause').textContent=DEMO.paused?'Resume':'Pause';
