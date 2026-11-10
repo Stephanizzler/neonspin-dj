@@ -424,6 +424,17 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 .xl-mode .xm2{font-size:9.5px;line-height:1.15;padding:5px 0}
 .xlock p{margin:0;font-size:11.5px;line-height:1.35;color:var(--muted);text-align:center;flex:1;display:flex;align-items:center}
 .xlock.battle p,.xlock.tr p{display:none}
+/* share-my-scratch clips */
+.clipbtn{color:#ffd23f;border-color:color-mix(in srgb,#ffd23f 45%,var(--edge-hi))}
+.clipbtn.live{background:var(--rec);border-color:var(--rec);color:#fff}
+.clipsheet{position:absolute;inset:0;z-index:64;background:rgba(6,5,16,.88);display:flex;align-items:center;justify-content:center;gap:28px;padding:16px;box-sizing:border-box}
+.clipsheet[hidden]{display:none}
+.clipsheet video{height:calc(100% - 20px);aspect-ratio:9/16;border-radius:16px;background:#000;box-shadow:0 20px 60px rgba(0,0,0,.7)}
+.clipside{width:300px;display:flex;flex-direction:column;gap:10px}
+.clipside h3{margin:0;font-size:24px;font-weight:800}
+.clipside p{margin:0;color:var(--muted);font-size:14px;line-height:1.4}
+.clipside .tb{font-size:17px;padding:12px 16px}
+.clipgo{background:var(--go);border-color:var(--go);color:var(--screen);font-weight:800}
 .led{width:8px;height:8px;border-radius:50%;background:#2a2540;display:inline-block}
 .led.on{background:var(--rec);box-shadow:0 0 6px var(--rec)}
 
@@ -585,6 +596,7 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
       <button class="tb" id="setupBtn">Setup</button>
       <button class="tb lesbtn" id="lesBtn">★ Lessons</button>
       <button class="tb" id="learnBtn" hidden>MIDI Learn</button>
+      <button class="tb clipbtn" id="clipBtn" aria-label="Record a short video clip to share">🎬 Clip</button>
       <button class="tb recbtn" id="recBtn" aria-label="Record mix"><span class="dot"></span>REC</button>
       <span class="rectime" id="recTime">00:00</span>
       <button class="tb sm" id="fsBtn" aria-label="Full screen">⛶</button>
@@ -739,6 +751,12 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
       <p class="pro-soon" id="proSoon" hidden>Pro is coming soon. Everything is free to use for now.</p>
       <label class="pro-key" for="proKey">Already bought Pro? Enter your licence key<span><input id="proKey" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false"><button class="tb sm" id="proActivate">Activate</button></span></label>
       <div class="wrow"><button class="tb" id="proClose">Not now</button></div>
+    </div>
+    <div class="clipsheet" id="clipSheet" role="dialog" aria-labelledby="clipT" hidden>
+      <video id="clipVid" playsinline controls loop></video>
+      <div class="clipside"><h3 id="clipT">Your scratch clip</h3><p id="clipInfo"></p>
+        <button class="tb clipgo" id="clipShare">Share…</button><button class="tb" id="clipSave">Save video</button><button class="tb" id="clipAgain">Record again</button><button class="tb" id="clipClose">Close</button>
+        <p class="cliptip">Share sends it to TikTok, Instagram, Messages or <b>Save Video</b> (Photos).</p></div>
     </div>
     <div class="tip-ring les-ring" id="lesRing" hidden></div>
     <div class="tip les" id="lesCard" role="status" aria-live="polite" hidden>
@@ -1429,8 +1447,8 @@ function jogTicks(s,ticks,fromMidi){const d=sideDeck(s);if(!d.buf)return;ensureA
     if(d.tempTouch){clearTimeout(d.tt);d.tt=setTimeout(()=>{d.tempTouch=false;if(!d.touching)post({t:'touch',d:d.k,on:false})},140)}
     post({t:'scratch',d:d.k,delta:rev*SEC_PER_REV*d.sens});d.lastJog=performance.now()}
   else{d.wheelBend=clamp(d.wheelBend+rev*0.5*d.sens,-0.15,0.15);updateBend(d)}}
-function drawJog(s){
-  const c=$('jog'+s),d=sideDeck(s),[w,h]=fit(c),g=c.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,w,h);
+function drawJog(s,oc,os){
+  const c=oc||$('jog'+s),d=sideDeck(s);if(oc&&oc.width!==os){oc.width=oc.height=os}const[w,h]=oc?[os,os]:fit(c),g=c.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,w,h);
   const R=Math.min(w,h)/2,col=d.color,pos=dispPos(d),on=!!d.buf,TAU=Math.PI*2;let ang=pos/(SEC_PER_REV*d.sens)*TAU;
   /* while your finger is on the record, the record is drawn exactly under your finger; on release it eases back to the audio */
   if(d.hand)ang=d.hand.a+d.hand.off;else if(d.rel){const k=1-(performance.now()-d.rel.t)/160;if(k>0)ang+=d.rel.diff*k*k;else d.rel=null}
@@ -1459,7 +1477,7 @@ function drawJog(s){
   g.restore();
   g.fillStyle='#0a0818';arc(R*0.13);g.fill();g.fillStyle=on?col:'#625d8f';g.font=`800 ${Math.round(R*0.15)}px Outfit,sans-serif`;g.textAlign='center';g.textBaseline='middle';g.fillText(d.letter,0,R*0.01);
   if(d.touching||d.jogActive||d.tempTouch){g.strokeStyle='#ffffff';g.globalAlpha=0.75;g.lineWidth=R*0.014;arc(d.jogActive?R*0.93:R*0.8);g.stroke();g.globalAlpha=1}
-  if(on&&typeof TR!=='undefined'&&TR.on&&!TR.held&&curView==='platters'&&d.k===(SCR.deck==='A'?0:1)){g.fillStyle='#ff4d5e';g.font=`800 ${Math.round(R*0.075)}px Outfit,sans-serif`;g.textAlign='center';g.fillText('MUTED · HOLD PAD',0,R*0.6)}
+  if(!oc&&on&&typeof TR!=='undefined'&&TR.on&&!TR.held&&curView==='platters'&&d.k===(SCR.deck==='A'?0:1)){g.fillStyle='#ff4d5e';g.font=`800 ${Math.round(R*0.075)}px Outfit,sans-serif`;g.textAlign='center';g.fillText('MUTED · HOLD PAD',0,R*0.6)}
   if(d.rev||d.flux||d.roll){g.fillStyle=d.rev?'#ff4d5e':'#a29dcc';g.font=`700 ${Math.round(R*0.075)}px Outfit,sans-serif`;g.fillText(d.roll?'STUTTER':d.rev?'REVERSE':'SLIP',0,-R*0.58)}
   if(!on){g.fillStyle='#a29dcc';g.font=`600 ${Math.round(R*0.085)}px Outfit,sans-serif`;g.fillText(d.loading?'LOADING DEMO…':'LOAD A TRACK',0,R*0.58)}
 }
@@ -1857,6 +1875,65 @@ addEventListener('pointermove',e=>{if(!PZ.has(e.pointerId))return;PZ.set(e.point
 const pzEnd=e=>{if(!PZ.delete(e.pointerId))return;if(PZ.size<2)pinch=null;if(!PZ.size&&CAM.z<1.08)resetZoom()};
 addEventListener('pointerup',pzEnd);addEventListener('pointercancel',pzEnd);
 $('zoomChip').onclick=resetZoom;
+/* ---------- Share my scratch: a 9:16 video of the scratch platter with the app's own audio ---------- */
+const CLIP={on:false,mr:null,chunks:[],t0:0,raf:0,blob:null,url:null,type:'',max:15,timer:0};
+const clipLogo=new Image();clipLogo.src='icons/jog-icon-192.png';
+function clipMime(){if(!window.MediaRecorder)return null;for(const t of['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'])
+  if(!MediaRecorder.isTypeSupported||MediaRecorder.isTypeSupported(t))return t;return null}
+function clipFrame(cv,pl,pb){const g=cv.getContext('2d'),W=cv.width,H=cv.height,side=SCR.deck==='A'?'L':'R',bside=side==='L'?'R':'L',S=sideDeck(side),Bt=sideDeck(bside);
+  const gr=g.createLinearGradient(0,0,0,H);gr.addColorStop(0,'#17133a');gr.addColorStop(1,'#0a0818');g.fillStyle=gr;g.fillRect(0,0,W,H);
+  const glow=g.createRadialGradient(W/2,H*0.44,40,W/2,H*0.44,W*0.75);glow.addColorStop(0,'rgba(124,92,255,.28)');glow.addColorStop(1,'rgba(124,92,255,0)');g.fillStyle=glow;g.fillRect(0,0,W,H);
+  /* brand */
+  if(clipLogo.complete&&clipLogo.naturalWidth){g.save();g.beginPath();g.arc(W/2-138,84,32,0,Math.PI*2);g.clip();g.drawImage(clipLogo,W/2-170,52,64,64);g.restore()}
+  g.fillStyle='#f2f0ff';g.font='800 50px Outfit,sans-serif';g.textAlign='left';g.textBaseline='middle';g.fillText('SoundLab',W/2-92,86);const sw=g.measureText('SoundLab').width;
+  g.fillStyle='#a29dcc';g.fillText(' DJ',W/2-92+sw,86);
+  g.textAlign='center';g.font='700 22px Outfit,sans-serif';g.fillStyle='#ff9f43';g.fillText('BATTLE MODE',W/2,146);
+  /* tracks */
+  g.font='700 28px Outfit,sans-serif';g.fillStyle=S.color;g.fillText(`${S.letter} · ${S.name||'Scratch deck'}`,W/2,200);
+  g.font='500 22px Outfit,sans-serif';g.fillStyle='#a29dcc';g.fillText(`Beat: ${Bt.name||'—'}${Bt.bpm?' · '+Math.round(Bt.bpm*ratio(Bt))+' BPM':''}`,W/2,238);
+  /* the scratch platter, big */
+  const P=600;drawJog(side,pl,P);g.drawImage(pl,(W-P)/2,270,P,P);
+  /* beat lights from the beat deck */
+  if(Bt.bpm&&Bt.playing){const bt=(dispPos(Bt)-Bt.first)*Bt.bpm/60,bi=((Math.floor(bt)%4)+4)%4,ph=bt-Math.floor(bt);
+    for(let i=0;i<4;i++){g.beginPath();g.arc(W/2-90+i*60,912,i===bi?15:11,0,Math.PI*2);g.fillStyle=i===bi?`rgba(255,255,255,${1-ph*0.6})`:'#2a2552';g.fill()}}
+  /* crossfader + cut light: lit while the scratch deck is heard */
+  const k=S.k,audible=G&&(xfGains()[k%2]*trGate(k))>0.5;const y=990,x0=110,x1=W-110;
+  g.fillStyle='#120f27';g.beginPath();g.roundRect?g.roundRect(x0-40,y-40,x1-x0+80,80,20):g.rect(x0-40,y-40,x1-x0+80,80);g.fill();
+  g.fillStyle='#06050f';g.fillRect(x0+30,y-5,x1-x0-60,10);
+  const xfv=hamOn()?-mix.xf:mix.xf,cx=x0+30+(xfv+1)/2*(x1-x0-60);g.fillStyle='#e9e6ff';g.fillRect(cx-22,y-28,44,56);
+  g.font='800 26px Outfit,sans-serif';g.fillStyle='#ff9f43';g.fillText('A',x0-8,y+1);g.fillStyle='#a06bff';g.fillText('B',x1+8,y+1);
+  g.beginPath();g.arc(W/2,1088,30,0,Math.PI*2);g.fillStyle=audible?'#2ee59d':'#1d1838';g.fill();if(audible){g.shadowColor='#2ee59d';g.shadowBlur=30;g.fill();g.shadowBlur=0}
+  g.font='800 20px Outfit,sans-serif';g.fillStyle=audible?'#2ee59d':'#625d8f';g.fillText(TR.on?'TRANSFORMER':'CUT',W/2,1140);
+  /* call to action */
+  g.font='700 30px Outfit,sans-serif';g.fillStyle='#f2f0ff';g.fillText('Learn to scratch on your phone',W/2,1196);
+  g.font='500 22px Outfit,sans-serif';g.fillStyle='#a29dcc';g.fillText(location.host+location.pathname.replace(/index\.html$/,''),W/2,1236)}
+async function clipStart(){if(CLIP.on)return;const mime=clipMime();if(!mime){toast('This browser cannot record video clips. Try Safari on iPhone or Chrome.',4000);return}
+  try{await ensureAudio()}catch(e){return}if(!G||!G.recDest){toast('Audio is not ready yet');return}
+  const cv=document.createElement('canvas');cv.width=720;cv.height=1280;cv.style.cssText='position:fixed;left:-9999px;top:0;width:2px;height:2px;pointer-events:none';document.body.appendChild(cv);
+  const pl=document.createElement('canvas');clipFrame(cv,pl);
+  let stream;try{stream=new MediaStream([...cv.captureStream(30).getVideoTracks(),...G.recDest.stream.getAudioTracks()])}catch(e){cv.remove();toast('Video capture is not supported here');return}
+  let mr;try{mr=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:4500000,audioBitsPerSecond:192000})}catch(e){try{mr=new MediaRecorder(stream)}catch(e2){cv.remove();toast('Recording could not start: '+e2.message);return}}
+  Object.assign(CLIP,{on:true,mr,chunks:[],t0:performance.now(),type:mr.mimeType||mime,cv});
+  mr.ondataavailable=e=>{if(e.data&&e.data.size)CLIP.chunks.push(e.data)};
+  mr.onstop=()=>{cancelAnimationFrame(CLIP.raf);clearInterval(CLIP.timer);cv.remove();CLIP.on=false;$('clipBtn').classList.remove('live');$('clipBtn').textContent='🎬 Clip';
+    const secs=(performance.now()-CLIP.t0)/1000;if(secs<1.5||!CLIP.chunks.length){toast('Clip too short. Tap 🎬 Clip, scratch, then tap again to stop.',3500);return}
+    CLIP.blob=new Blob(CLIP.chunks,{type:CLIP.type.split(';')[0]});clipShow(secs)};
+  const loop=()=>{if(!CLIP.on)return;clipFrame(cv,pl);CLIP.raf=requestAnimationFrame(loop)};loop();
+  mr.start(250);$('clipBtn').classList.add('live');
+  const tick=()=>{const left=Math.max(0,CLIP.max-(performance.now()-CLIP.t0)/1000);$('clipBtn').textContent=`■ ${Math.ceil(left)}s`;if(left<=0)clipStop()};tick();CLIP.timer=setInterval(tick,200)}
+function clipStop(){if(CLIP.on&&CLIP.mr&&CLIP.mr.state!=='inactive')CLIP.mr.stop()}
+function clipExt(){return /mp4/.test(CLIP.type)?'mp4':'webm'}
+function clipShow(secs){if(CLIP.url)URL.revokeObjectURL(CLIP.url);CLIP.url=URL.createObjectURL(CLIP.blob);const v=$('clipVid');v.src=CLIP.url;
+  $('clipInfo').textContent=`${secs.toFixed(1)} seconds · ${(CLIP.blob.size/1048576).toFixed(1)} MB · ${clipExt().toUpperCase()}`;
+  const f=new File([CLIP.blob],'x.'+clipExt(),{type:CLIP.blob.type});const canShare=!!(navigator.canShare&&navigator.canShare({files:[f]}));$('clipShare').hidden=!canShare;document.querySelector('.cliptip').hidden=!canShare;
+  $('clipSheet').hidden=false;v.play().catch(()=>{})}
+function clipClose(){const v=$('clipVid');v.pause();$('clipSheet').hidden=true}
+$('clipBtn').onclick=()=>CLIP.on?clipStop():clipStart();
+$('clipShare').onclick=async()=>{const name=`SoundLab-DJ-scratch.${clipExt()}`,file=new File([CLIP.blob],name,{type:CLIP.blob.type});
+  try{await navigator.share({files:[file],title:'My scratch on SoundLab DJ',text:'Scratched on my phone with SoundLab DJ: '+location.origin+location.pathname.replace(/index\.html$/,'')})}catch(e){if(e&&e.name!=='AbortError')toast('Sharing did not work here. Use Save video instead.',3500)}};
+$('clipSave').onclick=()=>{const a=document.createElement('a');a.href=CLIP.url;a.download=`SoundLab-DJ-scratch-${new Date().toISOString().slice(0,16).replace(/[:T]/g,'-')}.${clipExt()}`;document.body.appendChild(a);a.click();a.remove()};
+$('clipAgain').onclick=()=>{clipClose();clipStart()};
+$('clipClose').onclick=clipClose;
 /* ---------- views: Console, Mixer, Platters ---------- */
 const VIEWS={console:'Console',mixer:'Mixer',platters:'Battle',cd:'Decks C/D',sampler:'Sampler'};var curView='console';
 function setView(v,quiet){if(!VIEWS[v])v='console';if((v==='cd'||v==='sampler')&&!quiet&&needPro('Decks C/D and the sampler'))return;
@@ -2014,7 +2091,7 @@ addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;$('in
 $('installBtn').onclick=async()=>{if(!installEvt)return;installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;$('installBtn').hidden=true};
 addEventListener('appinstalled',()=>{$('installBtn').hidden=true;toast('SoundLab DJ is installed. Open it from your home screen.',4000)});
 /* updates: check for a new version on every launch and whenever the app comes back to the screen; load it straight away when nothing is playing */
-const APP_VER=24;try{$('verTxt').textContent='version '+APP_VER}catch(e){}
+const APP_VER=25;try{$('verTxt').textContent='version '+APP_VER}catch(e){}
 if(document.querySelector('link[rel=manifest]')&&'serviceWorker' in navigator){
   const hadSW=!!navigator.serviceWorker.controller;let reloading=false;
   navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{
