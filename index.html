@@ -621,10 +621,10 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
           <div class="xl-row"><button data-sc="battle" aria-pressed="false">BATTLE FADER</button><button data-sc="hamster" aria-pressed="false">HAMSTER</button></div>
           <div class="xl-row xl-deck"><span>Scratch deck</span><button data-sd="A">A</button><button data-sd="B">B</button></div>
           <label class="xl-cut"><span>Cut-in</span><input type="range" id="cutIn" min="1" max="15" step="1" value="3" aria-label="Crossfader cut-in distance"><b class="mono" id="cutInV">3%</b></label>
+          <div class="xl-row xl-mode"><span>Auto</span><button data-xm="off">OFF</button><button data-xm="fwd">FWD</button><button data-xm="trans" class="xm2">AUTO<br>TRANSFORMER</button></div>
+          <p id="xlHint"></p>
           <div class="xl-row"><button class="trbtn" data-tr aria-pressed="false">TRANSFORMER <i id="trState">OFF</i></button></div>
           <div class="cutpad" id="cutPad" role="button" aria-label="Transformer pad: the scratch deck plays only while you hold it"><b>TRANSFORMER</b><small id="cutPadSub">hold to hear Deck B</small></div>
-          <p id="xlHint"></p>
-          <div class="xl-row xl-mode"><span>Auto</span><button data-xm="off">OFF</button><button data-xm="fwd">FWD</button><button data-xm="trans" class="xm2">AUTO<br>TRANSFORMER</button></div>
         </div>
         <div class="mx-xf"><span class="xl" id="xlL" style="background:var(--a)">A</span><div id="xfader"></div><span class="xl" id="xlR" style="background:var(--b)">B</span></div>
       </div>
@@ -2011,7 +2011,7 @@ addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;$('in
 $('installBtn').onclick=async()=>{if(!installEvt)return;installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;$('installBtn').hidden=true};
 addEventListener('appinstalled',()=>{$('installBtn').hidden=true;toast('SoundLab DJ is installed. Open it from your home screen.',4000)});
 /* updates: check for a new version on every launch and whenever the app comes back to the screen; load it straight away when nothing is playing */
-const APP_VER=22;try{$('verTxt').textContent='version '+APP_VER}catch(e){}
+const APP_VER=23;try{$('verTxt').textContent='version '+APP_VER}catch(e){}
 if(document.querySelector('link[rel=manifest]')&&'serviceWorker' in navigator){
   const hadSW=!!navigator.serviceWorker.controller;let reloading=false;
   navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{
