@@ -383,7 +383,21 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 .lesbtn{color:var(--go);border-color:color-mix(in srgb,var(--go) 50%,var(--edge-hi))}
 .short .strips{padding-right:440px}
 .les-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:12px 14px;height:calc(100% - 52px);box-sizing:border-box;overflow:auto;align-content:start}
+.les-top{grid-column:1/-1;display:grid;grid-template-columns:1.4fr 1fr;gap:10px}
+.les-lv,.les-wk{background:var(--well);border:1.5px solid var(--edge-hi);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.les-wk{border-color:color-mix(in srgb,#ff9f43 55%,var(--edge-hi))}
+.les-lv b,.les-wk b{font-size:24px}
+.les-lv small{color:var(--muted);font-size:13px}
+.les-wk p{margin:0;font-size:13px;color:var(--muted);line-height:1.4}.les-wk .st{color:var(--pfl);letter-spacing:2px}
+.lvbar{height:10px;border-radius:5px;background:#221d44;overflow:hidden}.lvbar i{display:block;height:100%;background:linear-gradient(90deg,var(--go),#ffd23f)}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 4px}
+.bdg{display:flex;align-items:center;gap:4px;font-size:16px;padding:3px 9px;border-radius:999px;background:#17133a;border:1px solid var(--edge);filter:grayscale(1);opacity:.45}
+.bdg em{font-style:normal;font-size:11.5px;font-weight:700;color:var(--muted)}
+.bdg.on{filter:none;opacity:1;border-color:var(--pfl)}.bdg.on em{color:var(--ink)}
+.les-top .row{display:flex;gap:8px}.les-top .tb{align-self:flex-start}
+.wkgo{background:#ff9f43;border-color:#ff9f43;color:var(--screen);font-weight:800}
 .les-h{grid-column:1/-1;margin:4px 2px 0;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.namefld{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}.namefld input{background:var(--screen);border:1px solid var(--edge-hi);border-radius:9px;color:var(--ink);font:15px var(--f-ui);padding:7px 10px}
 .les-card{text-align:left;background:var(--well);border:1.5px solid var(--edge-hi);border-radius:14px;padding:10px 14px;display:flex;flex-direction:column;gap:3px;min-width:0}
 .les-card .n{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
 .les-card b{font-size:18px}
@@ -666,6 +680,12 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
     <section class="drawer" id="setup" aria-label="Setup">
       <div class="dhead"><h2>Setup</h2><span class="tgt">Audio interface, headphone cue, microphone and MIDI controller · <span class="mono" id="verTxt"></span></span><span class="sp"></span><button class="tb sm" id="setupClose">Close</button></div>
       <div class="setup-body">
+        <div class="card">
+          <h3>Privacy &amp; safety</h3>
+          <p><b>No ads, no tracking, no account.</b> Your music, recordings, lessons and stars stay on this device. Nothing is uploaded unless you choose to share a clip or a progress card.</p>
+          <p>The demo tracks and sounds are original, so they're safe to share in videos.</p>
+          <label class="namefld" for="djName"><span>Your DJ name (shown on progress cards, optional)</span><input id="djName" maxlength="24" placeholder="e.g. DJ Sam" autocomplete="off"></label>
+        </div>
         <div class="card">
           <h3>SoundLab DJ Pro</h3>
           <div class="avail" id="proState"></div>
@@ -1719,6 +1739,7 @@ const midiCfg=Object.assign({ticks:512},LS.get('ph-midicfg',{}));
 let maps=LS.get('ph-midi',{});
 let midiAccess=null;
 const learn={on:false,target:null};
+$('djName').value=LS.get('sl-name','');$('djName').oninput=e=>LS.set('sl-name',e.target.value.trim().slice(0,24));
 $('scrFeel').value=LS.get('sl-feel','tight');$('scrFeel').onchange=e=>{LS.set('sl-feel',e.target.value);if(node)node.port.postMessage({t:'feel',tight:e.target.value==='tight'});toast(e.target.value==='tight'?'Scratch response: tight':'Scratch response: smooth (original)',1800)};
 $('jogTicks').value=midiCfg.ticks;$('jogTicksV').textContent=midiCfg.ticks;
 $('jogTicks').oninput=e=>{midiCfg.ticks=+e.target.value;$('jogTicksV').textContent=midiCfg.ticks;LS.set('ph-midicfg',midiCfg)};
@@ -1929,9 +1950,9 @@ function clipShow(secs){if(CLIP.url)URL.revokeObjectURL(CLIP.url);CLIP.url=URL.c
   $('clipSheet').hidden=false;v.play().catch(()=>{})}
 function clipClose(){const v=$('clipVid');v.pause();$('clipSheet').hidden=true}
 $('clipBtn').onclick=()=>CLIP.on?clipStop():clipStart();
-$('clipShare').onclick=async()=>{const name=`SoundLab-DJ-scratch.${clipExt()}`,file=new File([CLIP.blob],name,{type:CLIP.blob.type});
+$('clipShare').onclick=async()=>{LS.set('sl-clips',LS.get('sl-clips',0)+1);const name=`SoundLab-DJ-scratch.${clipExt()}`,file=new File([CLIP.blob],name,{type:CLIP.blob.type});
   try{await navigator.share({files:[file],title:'My scratch on SoundLab DJ',text:'Scratched on my phone with SoundLab DJ: '+location.origin+location.pathname.replace(/index\.html$/,'')})}catch(e){if(e&&e.name!=='AbortError')toast('Sharing did not work here. Use Save video instead.',3500)}};
-$('clipSave').onclick=()=>{const a=document.createElement('a');a.href=CLIP.url;a.download=`SoundLab-DJ-scratch-${new Date().toISOString().slice(0,16).replace(/[:T]/g,'-')}.${clipExt()}`;document.body.appendChild(a);a.click();a.remove()};
+$('clipSave').onclick=()=>{LS.set('sl-clips',LS.get('sl-clips',0)+1);const a=document.createElement('a');a.href=CLIP.url;a.download=`SoundLab-DJ-scratch-${new Date().toISOString().slice(0,16).replace(/[:T]/g,'-')}.${clipExt()}`;document.body.appendChild(a);a.click();a.remove()};
 $('clipAgain').onclick=()=>{clipClose();clipStart()};
 $('clipClose').onclick=clipClose;
 /* ---------- views: Console, Mixer, Platters ---------- */
@@ -2091,7 +2112,7 @@ addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;$('in
 $('installBtn').onclick=async()=>{if(!installEvt)return;installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;$('installBtn').hidden=true};
 addEventListener('appinstalled',()=>{$('installBtn').hidden=true;toast('SoundLab DJ is installed. Open it from your home screen.',4000)});
 /* updates: check for a new version on every launch and whenever the app comes back to the screen; load it straight away when nothing is playing */
-const APP_VER=25;try{$('verTxt').textContent='version '+APP_VER}catch(e){}
+const APP_VER=26;try{$('verTxt').textContent='version '+APP_VER}catch(e){}
 if(document.querySelector('link[rel=manifest]')&&'serviceWorker' in navigator){
   const hadSW=!!navigator.serviceWorker.controller;let reloading=false;
   navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{
@@ -2460,30 +2481,86 @@ const LESSONS=[
 async function battlePrep(){const ld=async(k,i)=>{const t=lib.tracks.find(x=>x.demo===i);if(t&&decks[k].name!==DEMOS[i].name)await loadTrack(k,t)};
   await ld(0,4);await ld(1,5);setView('platters',true);SCR.deck='B';setBattle(true);setTransformer(true);ui.L.cf.set(0.85);ui.R.cf.set(0.95);const B=decks[1];seek(B,B.hot[0]!=null?B.hot[0]:B.cue);await playDeck(A_());renderScr();refreshAll()}
 const lesProg=()=>LS.get('sl-lessons',{});
+/* course order: which week each lesson belongs to */
+const WEEK_OF={play:1,faders:1,sync:1,hot:2,loopfx:2,bass:3,scratch:3,match:4,mix:4,fwd:5,chirp:5,trans:6,flare:6,round:7};
+const LEVELS=[[0,'Beginner'],[5,'Bedroom DJ'],[12,'Party DJ'],[20,'Club DJ'],[28,'Headliner'],[36,'Battle Champ'],[42,'Legend']];
+function djLevel(stars){let i=0;for(let k=0;k<LEVELS.length;k++)if(stars>=LEVELS[k][0])i=k;const nx=LEVELS[i+1];return{name:LEVELS[i][1],i,next:nx?nx[1]:null,need:nx?nx[0]-stars:0,frac:nx?(stars-LEVELS[i][0])/(nx[0]-LEVELS[i][0]):1}}
+const BADGES=[
+  {id:'firstmix',icon:'🎧',name:'First mix',how:'Finish "Your first mix"',ok:p=>!!p.mix},
+  {id:'beat',icon:'👂',name:'Golden ears',how:'3 stars in "Beatmatch by ear"',ok:p=>(p.match||{}).stars===3},
+  {id:'scr',icon:'💿',name:'Scratch starter',how:'Finish "Baby scratch"',ok:p=>!!p.scratch},
+  {id:'mixall',icon:'🎚️',name:'Full mixer',how:'Finish every Mixing lesson',ok:p=>['play','faders','sync','hot','loopfx','bass','scratch','match','mix'].every(k=>p[k])},
+  {id:'battle',icon:'⚔️',name:'Battle ready',how:'Finish every Battle lesson',ok:p=>['fwd','chirp','trans','flare','round'].every(k=>p[k])},
+  {id:'perfect',icon:'🌟',name:'Perfectionist',how:'3 stars in 5 lessons',ok:p=>Object.values(p).filter(x=>x.stars===3).length>=5},
+  {id:'weekly',icon:'🏆',name:'Challenger',how:'Finish a weekly challenge',ok:()=>LS.get('sl-weekly-done',0)>0},
+  {id:'clip',icon:'🎬',name:'On camera',how:'Share or save a scratch clip',ok:()=>LS.get('sl-clips',0)>0}];
+const earnedBadges=()=>{const p=lesProg();return BADGES.filter(b=>b.ok(p))};
+/* weekly challenge: one lesson featured per calendar week, the same for everyone */
+const WEEKLY_POOL=['chirp','faders','fwd','bass','trans','scratch','flare','match','round','hot'];
+function weekNo(){const d=new Date();const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const day=t.getUTCDay()||7;t.setUTCDate(t.getUTCDate()+4-day);const y=new Date(Date.UTC(t.getUTCFullYear(),0,1));return t.getUTCFullYear()*100+Math.ceil(((t-y)/86400000+1)/7)}
+function weekly(){const wk=weekNo(),id=WEEKLY_POOL[wk%WEEKLY_POOL.length],sv=LS.get('sl-weekly',{});return{wk,id,best:sv.wk===wk&&sv.id===id?sv:null}}
+/* share an image card through the share sheet, or download it */
+async function shareCanvas(cv,name,text){const blob=await new Promise(r=>cv.toBlob(r,'image/png'));const f=new File([blob],name,{type:'image/png'});
+  try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],text});return}}catch(e){if(e&&e.name==='AbortError')return}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);toast('Image saved',2000)}
+function cardBase(W,H){const cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');const gr=g.createLinearGradient(0,0,0,H);gr.addColorStop(0,'#1d1745');gr.addColorStop(1,'#0a0818');g.fillStyle=gr;g.fillRect(0,0,W,H);
+  if(clipLogo.complete&&clipLogo.naturalWidth){g.save();g.beginPath();g.arc(110,110,46,0,Math.PI*2);g.clip();g.drawImage(clipLogo,64,64,92,92);g.restore()}
+  g.textBaseline='middle';g.textAlign='left';g.font='800 54px Outfit,sans-serif';g.fillStyle='#f2f0ff';g.fillText('SoundLab',180,110);const w=g.measureText('SoundLab').width;g.fillStyle='#a29dcc';g.fillText(' DJ',180+w,110);
+  const url=location.host+location.pathname.replace(/index\.html$/,'');g.font='500 28px Outfit,sans-serif';g.fillStyle='#a29dcc';g.textAlign='center';g.fillText(url,W/2,H-60);return{cv,g}}
+function shareProgress(){const p=lesProg(),tot=LESSONS.reduce((a,l)=>a+((p[l.id]||{}).stars||0),0),lv=djLevel(tot),bs=earnedBadges(),name=LS.get('sl-name','');
+  const{cv,g}=cardBase(1080,1350);g.textAlign='center';
+  g.font='700 34px Outfit,sans-serif';g.fillStyle='#a29dcc';g.fillText(name?`${name}'s DJ progress`:'My DJ progress',540,230);
+  g.font='800 88px Outfit,sans-serif';g.fillStyle='#2ee59d';g.fillText(lv.name,540,330);
+  g.font='700 40px Outfit,sans-serif';g.fillStyle='#ffd23f';g.fillText(`★ ${tot} of ${LESSONS.length*3} stars · ${bs.length} badges`,540,420);
+  g.font='600 30px Outfit,sans-serif';LESSONS.forEach((l,i)=>{const c=i%2,r=Math.floor(i/2),x=c?580:120,y=510+r*72,st=(p[l.id]||{}).stars||0;g.textAlign='left';g.fillStyle=st?'#f2f0ff':'#625d8f';let fs=30;g.font=`600 ${fs}px Outfit,sans-serif`;while(g.measureText(l.title).width>255&&fs>18){fs--;g.font=`600 ${fs}px Outfit,sans-serif`}g.fillText(l.title,x,y);g.font='600 30px Outfit,sans-serif';
+    g.textAlign='right';g.fillStyle='#ffd23f';g.fillText(starStr(st),x+380,y)});
+  g.textAlign='center';g.font='48px sans-serif';g.fillText(bs.map(b=>b.icon).join('  ')||'',540,1050);
+  g.font='500 26px Outfit,sans-serif';g.fillStyle='#a29dcc';g.fillText(new Date().toLocaleDateString(),540,1140);
+  shareCanvas(cv,'SoundLab-DJ-progress.png','My progress on SoundLab DJ')}
+function shareWeekly(){const w=weekly(),l=LESSONS.find(x=>x.id===w.id);if(!w.best)return;const{cv,g}=cardBase(1080,1080);g.textAlign='center';
+  g.font='700 36px Outfit,sans-serif';g.fillStyle='#ff9f43';g.fillText('WEEKLY CHALLENGE',540,260);
+  g.font='800 84px Outfit,sans-serif';g.fillStyle='#f2f0ff';g.fillText(l.title,540,370);
+  g.font='120px sans-serif';g.fillStyle='#ffd23f';g.fillText(starStr(w.best.stars),540,530);
+  g.font='600 36px Outfit,sans-serif';g.fillStyle='#a29dcc';g.fillText(w.best.txt||`Time ${fmtD(w.best.secs)}`,540,660);
+  g.font='700 40px Outfit,sans-serif';g.fillStyle='#2ee59d';g.fillText('Can you beat it?',540,780);
+  shareCanvas(cv,'SoundLab-DJ-challenge.png',`I got ${w.best.stars} stars in this week's ${l.title} challenge on SoundLab DJ. Can you beat it?`)}
+
 const starStr=n=>'★'.repeat(n)+'☆'.repeat(3-n);
 function openLessons(){closeLib();closeSetup();renderLessons();$('lessons').classList.add('open')}
 function closeLessons(){$('lessons').classList.remove('open')}
 function renderLessons(){const pr=lesProg();let tot=0;const g=$('lesGrid');g.innerHTML='';
+  const total=LESSONS.reduce((a,l)=>a+((pr[l.id]||{}).stars||0),0),lv=djLevel(total),bs=earnedBadges().map(b=>b.id),w=weekly(),wl=LESSONS.find(x=>x.id===w.id),wi=LESSONS.indexOf(wl);
+  const top=document.createElement('div');top.className='les-top';
+  top.innerHTML=`<div class="les-lv"><span class="lbl">Your DJ level</span><b>${lv.name}</b><div class="lvbar"><i style="width:${Math.round(lv.frac*100)}%"></i></div>
+      <small>${lv.next?`${lv.need} more star${lv.need===1?'':'s'} to ${lv.next}`:'Top level reached!'}</small>
+      <div class="badges">${BADGES.map(b=>`<span class="bdg${bs.includes(b.id)?' on':''}" title="${b.name}: ${b.how}">${b.icon}<em>${b.name}</em></span>`).join('')}</div>
+      <button class="tb sm" id="lesShareProg">Share my progress</button></div>
+    <div class="les-wk"><span class="lbl">🏆 Weekly challenge</span><b>${wl.title}</b><p>${w.best?`Your best this week: <span class="st">${starStr(w.best.stars)}</span>${w.best.txt?'<br>'+w.best.txt:''}`:'Beat your best before the week ends. Everyone gets the same challenge.'}</p>
+      <div class="row"><button class="tb sm wkgo" id="lesWkGo">${w.best?'Try again':'Start'}</button>${w.best?'<button class="tb sm" id="lesWkShare">Share result</button>':''}</div></div>`;
+  g.appendChild(top);$('lesShareProg').onclick=shareProgress;$('lesWkGo').onclick=()=>startLesson(wi);if(w.best)$('lesWkShare').onclick=shareWeekly;
   let grp=null;LESSONS.forEach((l,i)=>{const gname=l.group||'Mixing';if(gname!==grp){grp=gname;const h=document.createElement('h3');h.className='les-h';h.textContent=gname==='Battle'?'Battle: scratch techniques':'Mixing';g.appendChild(h)}
     const s=(pr[l.id]||{}).stars||0;tot+=s;const b=document.createElement('button');b.className='les-card'+(s?' done':'');
-    b.innerHTML=`<span class="n">${i+1} · ${l.lvl}</span><b>${l.title}</b><p>${l.about}</p><span class="st" aria-label="${s} of 3 stars">${starStr(s)}</span>`;b.onclick=()=>startLesson(i);g.appendChild(b)});
+    b.innerHTML=`<span class="n">Week ${WEEK_OF[l.id]||'·'} · ${l.lvl}${l.id===w.id?' · 🏆':''}</span><b>${l.title}</b><p>${l.about}</p><span class="st" aria-label="${s} of 3 stars">${starStr(s)}</span>`;b.onclick=()=>startLesson(i);g.appendChild(b)});
   $('lesTot').textContent=`★ ${tot} of ${LESSONS.length*3} stars`}
 async function startLesson(i){if(DEMO.on||!LESSONS[i])return;closeLessons();closeLib();closeSetup();if(tipState.on)setTips(false);
-  const l=LESSONS[i];if(!LES.on)LES.saved={tr:TR.on,battle:SCR.battle};Object.assign(LES,{on:true,busy:true,i,q:{},h:{},skipped:false,passing:false,result:null,sc:{strokes:[],edges:[],fr:[],ah:[]}});renderLes();
+  const l=LESSONS[i];LES.badgesBefore=earnedBadges().map(b=>b.id);if(!LES.on)LES.saved={tr:TR.on,battle:SCR.battle};Object.assign(LES,{on:true,busy:true,i,q:{},h:{},skipped:false,passing:false,result:null,sc:{strokes:[],edges:[],fr:[],ah:[]}});renderLes();
   try{await ensureAudio();await demoPrepare();view.L=0;view.R=1;setView(l.view||'console',true);if(l.prep)await l.prep();refreshAll()}catch(e){console.error(e)}
   if(!LES.on||LES.i!==i)return;LES.busy=false;LES.t0=performance.now();lesStep(0)}
 function lesStep(n){const l=LESSONS[LES.i],st=l.steps[n];Object.assign(LES,{step:n,passing:false,h:{},stepT0:performance.now()});LES.st=st.init?st.init():{};
   if(st.tab){panelOf[st.tab[0]]=st.tab[1];refreshAll()}renderLes()}
-function finishLesson(){const l=LESSONS[LES.i],secs=(performance.now()-LES.t0)/1000,r={secs,skipped:LES.skipped,q:LES.q};LES.sc.on=false;
+function finishLesson(){LES.badgesBefore=LES.badgesBefore||[];const l=LESSONS[LES.i],secs=(performance.now()-LES.t0)/1000,r={secs,skipped:LES.skipped,q:LES.q};LES.sc.on=false;
   const stars=l.stars?l.stars(r):r.skipped?1:secs<=l.t[0]?3:secs<=l.t[1]?2:1;
   const pr=lesProg(),old=pr[l.id]||{};pr[l.id]={stars:Math.max(stars,old.stars||0),best:Math.min(secs,old.best||1e9),last:Date.now()};LS.set('sl-lessons',pr);
-  LES.result={stars,secs,txt:l.result?l.result(r):'',better:!!old.stars&&stars>old.stars};renderLes()}
+  const before=earnedBadges().map(b=>b.id);   /* (progress already saved above, so compare with what the player had before this lesson) */
+  const w=weekly();if(w.id===l.id){const txt=l.result?l.result(r):'';if(!w.best||stars>w.best.stars||(stars===w.best.stars&&secs<w.best.secs)){LS.set('sl-weekly',{wk:w.wk,id:w.id,stars,secs,txt})}LS.set('sl-weekly-done',LS.get('sl-weekly-done',0)+1)}
+  LES.result={stars,secs,txt:l.result?l.result(r):'',better:!!old.stars&&stars>old.stars,weekly:w.id===l.id};renderLes();
+  const nb=earnedBadges().filter(b=>!LES.badgesBefore.includes(b.id));if(nb.length)setTimeout(()=>toast(`New badge: ${nb.map(b=>b.icon+' '+b.name).join(', ')}!`,4000),600)}
 function quitLesson(){const sv=LES.saved;LES.on=false;LES.result=null;LES.sc.on=false;LES.saved=null;if(sv){if(TR.on!==sv.tr)setTransformer(sv.tr);if(SCR.battle!==sv.battle)setBattle(sv.battle)}$('lesCard').hidden=$('lesRing').hidden=true;renderTip()}
 function renderLes(){const l=LESSONS[LES.i];if(!LES.on)return;$('lesCard').hidden=false;
   const res=!!LES.result;$('lesRes').hidden=!res;$('lesRow').hidden=res;$('lesOk').hidden=true;$('lesCard').classList.toggle('done',res);
   if(res){const r=LES.result;$('lesHead').textContent=`Lesson ${LES.i+1} · ${l.title}`;$('lesText').innerHTML=r.stars===3?'<b>Lesson complete. Perfect!</b>':'<b>Lesson complete!</b>';
     $('lesStars').textContent=starStr(r.stars);
-    $('lesResTxt').innerHTML=[`Time: ${fmtD(r.secs)}`,r.txt,r.better?'New best!':'',r.stars<3?(LES.skipped?'Finish every step without skipping to earn more stars.':'Try again to earn more stars.'):''].filter(Boolean).join('<br>');
+    $('lesResTxt').innerHTML=[`Time: ${fmtD(r.secs)}`,r.txt,r.better?'New best!':'',r.weekly?'🏆 This was the weekly challenge! Share your result from Lessons.':'',r.stars<3?(LES.skipped?'Finish every step without skipping to earn more stars.':'Try again to earn more stars.'):''].filter(Boolean).join('<br>');
     $('lesNext').hidden=LES.i>=LESSONS.length-1;placeLes();return}
   $('lesHead').textContent=LES.busy?`Lesson ${LES.i+1} · ${l.title}`:`Lesson ${LES.i+1} · Step ${LES.step+1} of ${l.steps.length}`;
   const st=l.steps[LES.step];$('lesText').innerHTML=LES.busy?'Getting the decks ready…':(typeof st.txt==='function'?st.txt():st.txt);
