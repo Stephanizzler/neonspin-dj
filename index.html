@@ -415,12 +415,15 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
 .xl-cut b{font-size:12px;color:var(--ink);width:30px;text-align:right}
 .cutpad{display:none;flex:1;min-height:70px;border-radius:14px;border:2px dashed color-mix(in srgb,var(--sc) 70%,transparent);background:color-mix(in srgb,var(--sc) 10%,var(--panel-2));
   flex-direction:column;align-items:center;justify-content:center;touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer}
-.cutpad b{font-size:30px;font-weight:900;letter-spacing:.12em;color:var(--sc)}
+.cutpad b{font-size:21px;font-weight:900;letter-spacing:.08em;color:var(--sc)}
 .cutpad small{font-size:11px;color:var(--muted);font-weight:600}
 .cutpad.on{background:var(--sc);border-style:solid}.cutpad.on b,.cutpad.on small{color:var(--screen)}
-.xlock.battle .xl-cut{display:flex}.xlock.battle .cutpad{display:flex}
+.xlock.battle .xl-cut{display:flex}.xlock.tr .cutpad{display:flex}
+.trbtn i{font-style:normal;font-size:11px;opacity:.8;margin-left:4px}
+.xl-row .trbtn.on{background:var(--go);border-color:var(--go);color:var(--screen)}
+.xl-mode .xm2{font-size:9.5px;line-height:1.15;padding:5px 0}
 .xlock p{margin:0;font-size:11.5px;line-height:1.35;color:var(--muted);text-align:center;flex:1;display:flex;align-items:center}
-.xlock.battle p{display:none}
+.xlock.battle p,.xlock.tr p{display:none}
 .led{width:8px;height:8px;border-radius:50%;background:#2a2540;display:inline-block}
 .led.on{background:var(--rec);box-shadow:0 0 6px var(--rec)}
 
@@ -618,9 +621,10 @@ button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-v
           <div class="xl-row"><button data-sc="battle" aria-pressed="false">BATTLE FADER</button><button data-sc="hamster" aria-pressed="false">HAMSTER</button></div>
           <div class="xl-row xl-deck"><span>Scratch deck</span><button data-sd="A">A</button><button data-sd="B">B</button></div>
           <label class="xl-cut"><span>Cut-in</span><input type="range" id="cutIn" min="1" max="15" step="1" value="3" aria-label="Crossfader cut-in distance"><b class="mono" id="cutInV">3%</b></label>
-          <div class="cutpad" id="cutPad" role="button" aria-label="Cut pad: opens the scratch deck while held"><b>CUT</b><small id="cutPadSub">hold to open Deck B</small></div>
+          <div class="xl-row"><button class="trbtn" data-tr aria-pressed="false">TRANSFORMER <i id="trState">OFF</i></button></div>
+          <div class="cutpad" id="cutPad" role="button" aria-label="Transformer pad: the scratch deck plays only while you hold it"><b>TRANSFORMER</b><small id="cutPadSub">hold to hear Deck B</small></div>
           <p id="xlHint"></p>
-          <div class="xl-row xl-mode"><span>Auto</span><button data-xm="off">OFF</button><button data-xm="fwd">FWD</button><button data-xm="trans">TRANS</button></div>
+          <div class="xl-row xl-mode"><span>Auto</span><button data-xm="off">OFF</button><button data-xm="fwd">FWD</button><button data-xm="trans" class="xm2">AUTO<br>TRANSFORMER</button></div>
         </div>
         <div class="mx-xf"><span class="xl" id="xlL" style="background:var(--a)">A</span><div id="xfader"></div><span class="xl" id="xlR" style="background:var(--b)">B</span></div>
       </div>
@@ -1113,8 +1117,10 @@ function applyMix(k){if(!G)return;const c=mix.ch[k],n=G.ch[k],t=ctx.currentTime,
   n.fader.gain.setTargetAtTime(c.fader<=0?0:Math.pow(c.fader,1.6),t,tc);n.pfl.gain.setTargetAtTime(c.pfl?1:0,t,0.005)}
 var SCR={deck:'B',battle:false,hamster:LS.get('sl-hamster',false),cutIn:0.03,auto:'off',prevCurve:'blend',lastA:null,v:0,cur:null};
 const hamOn=()=>SCR.hamster&&typeof curView!=='undefined'&&curView==='platters';
-function xfGains(){const t=((hamOn()?-mix.xf:mix.xf)+1)/2;if(mix.curve==='battle'){const c=SCR.cutIn;return[t<1-c?1:0,t>c?1:0]}if(mix.curve==='cut')return[clamp((1-t)*14,0,1),clamp(t*14,0,1)];return[Math.cos(t*Math.PI/2),Math.sin(t*Math.PI/2)]}
-function applyXf(){if(!G)return;const[gl,gr]=xfGains(),t=ctx.currentTime,tc=mix.curve==='battle'?0.0012:0.004;G.ch.forEach((n,k)=>n.xf.gain.setTargetAtTime(k>=2?1:k%2===0?gl:gr,t,tc));if(typeof LES!=='undefined'&&LES&&LES.on)lesXf(gr>0.5)}
+function xfGains(){const t=((hamOn()?-mix.xf:mix.xf)+1)/2;if(mix.curve==='battle'||(typeof TR!=='undefined'&&TR.on&&curView==='platters')){const c=SCR.cutIn;return[t<1-c?1:0,t>c?1:0]}if(mix.curve==='cut')return[clamp((1-t)*14,0,1),clamp(t*14,0,1)];return[Math.cos(t*Math.PI/2),Math.sin(t*Math.PI/2)]}
+var TR={on:false,held:false};
+const trGate=k=>TR.on&&curView==='platters'&&k===(SCR.deck==='A'?0:1)?(TR.held?1:0):1;
+function applyXf(fast){if(!G)return;const[gl,gr]=xfGains(),t=ctx.currentTime,tc=fast?0.0004:mix.curve==='battle'||TR.on?0.0012:0.004;G.ch.forEach((n,k)=>n.xf.gain.setTargetAtTime((k>=2?1:k%2===0?gl:gr)*trGate(k),t,tc));if(typeof LES!=='undefined'&&LES&&LES.on)lesXf(gr*trGate(1)>0.5)}
 function applyMaster(){if(!G)return;const t=ctx.currentTime;G.masterG.gain.setTargetAtTime(mix.master*1.25,t,0.01);
   G.cueA.gain.setTargetAtTime(Math.cos(mix.cueMix*Math.PI/2),t,0.01);G.cueB.gain.setTargetAtTime(Math.sin(mix.cueMix*Math.PI/2),t,0.01);
   G.phonesG.gain.setTargetAtTime(mix.cueVol*1.2,t,0.01);G.micG.gain.setTargetAtTime(mix.micOn?mix.mic*1.6:0,t,0.01)}
@@ -1797,30 +1803,34 @@ const scrDeckIx=()=>SCR.deck==='A'?0:1, beatDeckIx=()=>SCR.deck==='A'?1:0;
 const physOf=x=>hamOn()?-x:x;
 const restPhys=()=>physOf(SCR.deck==='B'?-1:1);   /* closed on the scratch deck: only the beat plays */
 function setBattle(on){if(on===SCR.battle)return;SCR.battle=on;
-  if(on){SCR.prevCurve=mix.curve==='battle'?'blend':mix.curve;mix.curve='battle';xfader.set(restPhys())}else{mix.curve=SCR.prevCurve||'blend';cutPadRelease(true)}
+  if(on){SCR.prevCurve=mix.curve==='battle'?'blend':mix.curve;mix.curve='battle';xfader.set(TR.on?0:restPhys())}else{mix.curve=SCR.prevCurve||'blend';cutPadRelease(true)}
   applyXf();renderScr()}
-function renderScr(){const x=$('xlock');x.classList.toggle('battle',SCR.battle);x.style.setProperty('--sc',SCR.deck==='A'?'var(--a)':'var(--b)');
+function renderScr(){const x=$('xlock');x.classList.toggle('battle',SCR.battle);x.classList.toggle('tr',TR.on);const tb=x.querySelector('[data-tr]');tb.classList.toggle('on',TR.on);tb.setAttribute('aria-pressed',String(TR.on));$('trState').textContent=TR.on?'ON':'OFF';x.style.setProperty('--sc',SCR.deck==='A'?'var(--a)':'var(--b)');
   x.querySelectorAll('[data-sc]').forEach(b=>{const on=!!SCR[b.dataset.sc];b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});
   x.querySelectorAll('[data-sd]').forEach(b=>b.classList.toggle('on',b.dataset.sd===SCR.deck));
   x.querySelectorAll('[data-xm]').forEach(b=>b.classList.toggle('on',b.dataset.xm===SCR.auto));
-  $('cutIn').value=Math.round(SCR.cutIn*100);$('cutInV').textContent=Math.round(SCR.cutIn*100)+'%';$('cutPadSub').textContent=`hold to open Deck ${SCR.deck}`;
-  const bt=SCR.deck==='A'?'B':'A';$('xlHint').textContent=SCR.auto!=='off'?`Scratch Deck ${SCR.deck}: the crossfader ${SCR.auto==='fwd'?'opens only while you push the record forward':'chops your scratch in time with the beat'}. Touch the crossfader to stop.`:`Deck ${bt} plays the beat, Deck ${SCR.deck} holds your scratch sample. Turn on BATTLE FADER for a razor-sharp crossfader and a CUT pad.`;
+  $('cutIn').value=Math.round(SCR.cutIn*100);$('cutInV').textContent=Math.round(SCR.cutIn*100)+'%';$('cutPadSub').textContent=`hold to hear Deck ${SCR.deck}`;
+  const bt=SCR.deck==='A'?'B':'A';$('xlHint').textContent=SCR.auto!=='off'?`Scratch Deck ${SCR.deck}: the crossfader ${SCR.auto==='fwd'?'opens only while you push the record forward':'chops your scratch in time with the beat'}. Touch the crossfader to stop.`:`Deck ${bt} plays the beat, Deck ${SCR.deck} holds your scratch sample. Turn on TRANSFORMER for a hold-to-play pad, or BATTLE FADER for a razor-sharp crossfader.`;
   const h=hamOn(),L=$('xlL'),R=$('xlR');L.textContent=h?'B':'A';L.style.background=h?'var(--b)':'var(--a)';R.textContent=h?'A':'B';R.style.background=h?'var(--a)':'var(--b)'}
 /* CUT pad: a finger landing opens the scratch deck; another finger while it's open gives a quick click (crab scratch) */
 const padPtrs=new Set();let padClick=null;
-function cutPadRelease(force){if(force)padPtrs.clear();if(padPtrs.size)return;clearTimeout(padClick);$('cutPad').classList.remove('on');if(SCR.battle)xfader.set(restPhys())}
-$('cutPad').addEventListener('pointerdown',e=>{if(!SCR.battle)return;e.preventDefault();try{$('cutPad').setPointerCapture(e.pointerId)}catch(_){}ensureAudio();SCR.auto='off';
-  const wasOpen=padPtrs.size>0;padPtrs.add(e.pointerId);$('cutPad').classList.add('on');
-  if(wasOpen){xfader.set(restPhys());clearTimeout(padClick);padClick=setTimeout(()=>{if(padPtrs.size)xfader.set(0)},14)}else xfader.set(0);renderScr()});
+function trSet(open){if(TR.held===open)return;TR.held=open;applyXf(true);$('cutPad').classList.toggle('on',open)}
+function cutPadRelease(force){if(force)padPtrs.clear();if(padPtrs.size)return;clearTimeout(padClick);trSet(false)}
+$('cutPad').addEventListener('pointerdown',e=>{if(!TR.on)return;e.preventDefault();const wasOpen=padPtrs.size>0;padPtrs.add(e.pointerId);
+  if(wasOpen){trSet(false);clearTimeout(padClick);padClick=setTimeout(()=>{if(padPtrs.size)trSet(true)},12)}else trSet(true);   /* sound first, everything else after */
+  try{$('cutPad').setPointerCapture(e.pointerId)}catch(_){}if(!G)ensureAudio()});
 ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>$('cutPad').addEventListener(ev,e=>{if(padPtrs.delete(e.pointerId))cutPadRelease()}));
 $('xfader').addEventListener('pointerdown',()=>{if(SCR.auto!=='off'){SCR.auto='off';renderScr();toast('Auto crossfader off',1500)}},true);
 /* battle fader springs back to closed when you let go */
-const xfSpring=()=>{if(SCR.battle&&curView==='platters')setTimeout(()=>xfader.set(restPhys()),0)};
+const xfSpring=()=>{if(SCR.battle&&!TR.on&&curView==='platters')setTimeout(()=>xfader.set(restPhys()),0)};
 $('xfader').addEventListener('pointerup',xfSpring);$('xfader').addEventListener('pointercancel',xfSpring);
 document.querySelectorAll('#xlock [data-sc]').forEach(b=>b.onclick=()=>{if(b.dataset.sc==='battle')setBattle(!SCR.battle);
   else{SCR.hamster=!SCR.hamster;LS.set('sl-hamster',SCR.hamster);xfader.set(-mix.xf);toast(SCR.hamster?'Hamster on: the crossfader is reversed':'Hamster off',1800)}renderScr()});
-document.querySelectorAll('#xlock [data-sd]').forEach(b=>b.onclick=()=>{SCR.deck=b.dataset.sd;if(SCR.battle||SCR.auto!=='off')xfader.set(restPhys());renderScr()});
-document.querySelectorAll('#xlock [data-xm]').forEach(b=>b.onclick=()=>{SCR.auto=b.dataset.xm;SCR.lastA=null;SCR.v=0;SCR.cur=null;if(SCR.auto!=='off')xfader.set(restPhys());renderScr()});
+document.querySelectorAll('#xlock [data-sd]').forEach(b=>b.onclick=()=>{SCR.deck=b.dataset.sd;if(!TR.on&&(SCR.battle||SCR.auto!=='off'))xfader.set(restPhys());applyXf(true);renderScr()});
+function setTransformer(on){TR.on=on;padPtrs.clear();clearTimeout(padClick);TR.held=false;$('cutPad').classList.remove('on');
+  if(on){SCR.auto='off';xfader.set(0)}else if(SCR.battle)xfader.set(restPhys());applyXf(true);renderScr()}
+document.querySelector('#xlock [data-tr]').onclick=()=>setTransformer(!TR.on);
+document.querySelectorAll('#xlock [data-xm]').forEach(b=>b.onclick=()=>{if(b.dataset.xm!=='off'&&TR.on)setTransformer(false);SCR.auto=b.dataset.xm;SCR.lastA=null;SCR.v=0;SCR.cur=null;if(SCR.auto!=='off')xfader.set(restPhys());renderScr()});
 $('cutIn').oninput=e=>{SCR.cutIn=+e.target.value/100;applyXf();renderScr()};
 /* auto crossfader: opens to the scratch deck only while you scratch it */
 function xlockFrame(){if(SCR.auto==='off'||curView!=='platters')return;const H=decks[beatDeckIx()],S=decks[scrDeckIx()];let open=false;
@@ -1847,7 +1857,7 @@ $('zoomChip').onclick=resetZoom;
 /* ---------- views: Console, Mixer, Platters ---------- */
 const VIEWS={console:'Console',mixer:'Mixer',platters:'Battle',cd:'Decks C/D',sampler:'Sampler'};var curView='console';
 function setView(v,quiet){if(!VIEWS[v])v='console';if((v==='cd'||v==='sampler')&&!quiet&&needPro('Decks C/D and the sampler'))return;
-  if(v!=='platters'){if(SCR.battle)setBattle(false);if(SCR.auto!=='off'){SCR.auto='off';renderScr()}}const hamWas=hamOn();curView=v;if(hamWas!==hamOn())xfader.set(-mix.xf);try{renderScr()}catch(e){}resetZoom();const st=$('stage');st.classList.toggle('v-mixer',v==='mixer');st.classList.toggle('v-plat',v==='platters');st.classList.toggle('v-cd',v==='cd');st.classList.toggle('v-samp',v==='sampler');
+  if(v!=='platters'){if(SCR.battle)setBattle(false);if(SCR.auto!=='off'){SCR.auto='off';renderScr()}}const hamWas=hamOn();curView=v;if(hamWas!==hamOn())xfader.set(-mix.xf);applyXf(true);try{renderScr()}catch(e){}resetZoom();const st=$('stage');st.classList.toggle('v-mixer',v==='mixer');st.classList.toggle('v-plat',v==='platters');st.classList.toggle('v-cd',v==='cd');st.classList.toggle('v-samp',v==='sampler');
   if(v==='cd'||v==='sampler'){for(const k of[2,3])decks[k].xmode=v==='cd'?'track':'pads';refreshAll()}
   $('viewName').textContent=VIEWS[v];document.querySelectorAll('#viewPop [data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
   LS.set('sl-view',v);closeViewPop();layout();try{renderTip()}catch(e){}requestAnimationFrame(layout);
@@ -2001,7 +2011,7 @@ addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;$('in
 $('installBtn').onclick=async()=>{if(!installEvt)return;installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;$('installBtn').hidden=true};
 addEventListener('appinstalled',()=>{$('installBtn').hidden=true;toast('SoundLab DJ is installed. Open it from your home screen.',4000)});
 /* updates: check for a new version on every launch and whenever the app comes back to the screen; load it straight away when nothing is playing */
-const APP_VER=21;try{$('verTxt').textContent='version '+APP_VER}catch(e){}
+const APP_VER=22;try{$('verTxt').textContent='version '+APP_VER}catch(e){}
 if(document.querySelector('link[rel=manifest]')&&'serviceWorker' in navigator){
   const hadSW=!!navigator.serviceWorker.controller;let reloading=false;
   navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{
@@ -2057,7 +2067,7 @@ async function demoScratch(d,onTransformer){
   }
   xfader.set(1);mix.curve=prevCurve;applyXf();
   d.touching=false;post({t:'touch',d:d.k,on:false});setTimeout(()=>post({t:'flux',d:d.k,on:d.flux}),60)}
-async function demoPrepare(){if(SCR.battle)setBattle(false);SCR.auto='off';
+async function demoPrepare(){if(SCR.battle)setBattle(false);SCR.auto='off';if(TR.on)setTransformer(false);
   for(const d of decks){if(d.playing){d.playing=false;post({t:'play',d:d.k,on:false})}if(d.roll)stopRoll(d);d.loop=null;d.loopIn=null;postLoop(d);d.fx.on=false;applyFx(d.k);
     d.rev=false;post({t:'dir',d:d.k,v:1});d.flux=false;post({t:'flux',d:d.k,on:false});d.keylock=false;post({t:'kl',d:d.k,on:false});d.btnBend=d.wheelBend=0;updateBend(d)}
   for(const k of[0,1])if(decks[k].name!==DEMOS[k].name){const t=lib.tracks.find(x=>x.demo===k);if(t)await loadTrack(k,t)}
@@ -2068,7 +2078,7 @@ async function demoPrepare(){if(SCR.battle)setBattle(false);SCR.auto='off';
   setMaster(0);for(const s of['L','R']){for(const k in ui[s].kn)ui[s].kn[k].set(0);ui[s].cf.set(0.8)}
   ui.R.xg.set(0);xfader.set(-1);mix.curve='blend';applyXf();panelOf.L=panelOf.R='cues';refreshAll()}
 async function runDemo(){
-  const A=decks[0],B=decks[1],Dd=decks[3],T=27;let n=0;
+  const A=decks[0],B=decks[1],Dd=decks[3],T=28;let n=0;
   await scene(n++,T,null,'Welcome to <b>SoundLab DJ</b>. Here\'s a real mix, one feature at a time.',()=>dwait(2600));
   await scene(n++,T,['#dkL .tcol','#jogL'],'<b>PLAY</b> starts Deck A. The platter spins, and its outer ring shows how far through the track you are.',async()=>{press('#dkL [data-a=play]');togglePlay(A);await dwait(3600)});
   await scene(n++,T,'#strips','The waveforms show the beats coming up. The <b>Beats</b> bar compares Deck A and Deck B.',()=>dwait(3400));
@@ -2103,13 +2113,14 @@ async function runDemo(){
     SCR.deck='B';SCR.auto='off';renderScr();ui.L.cf.set(0.85);ui.R.cf.set(0.95);ui.L.kn.lo.set(0);ui.R.kn.lo.set(0);seek(B,B.hot[0]!=null?B.hot[0]:B.cue);xfader.set(-1);
     press('#dkL [data-a=play]');togglePlay(A);await dwait(2600)});
   await scene(n++,T,['#xlock'],'<b>BATTLE FADER</b>: a razor-sharp cut, and the crossfader springs back closed. The white sticker marks the start of the sound.',async()=>{press('#xlock [data-sc=battle]');setBattle(true);await dwait(3200)});
-  await scene(n++,T,null,'<b>Forward scratch</b>: hold <b>CUT</b> as you push the record, let go as you pull back. You only hear the push.',async()=>{
+  await scene(n++,T,['#xlock'],'<b>TRANSFORMER</b> on: now Deck B plays only while your finger is on the big pad. Instant, like the transform switches on old battle mixers.',async()=>{press('#xlock [data-tr]');setTransformer(true);await dwait(3000)});
+  await scene(n++,T,null,'<b>Forward scratch</b>: hold the pad as you push the record, let go as you pull back. You only hear the push.',async()=>{
     await demoStrokes(B,[[1,.3],[1,-.3],[1,.3],[1,-.3],[1,.3],[1,-.3],[1,.3],[1,-.3]],(i,dir)=>demoPad(dir>0))});
   await scene(n++,T,null,'<b>Chirp</b>: cut the end of every push, so the sound "chirps".',async()=>{
     await demoStrokes(B,[[.5,.24],[.5,-.24],[.5,.24],[.5,-.24],[.5,.24],[.5,-.24],[.5,.24],[.5,-.24]],(i,dir,u)=>demoPad(dir>0?u<0.55:u>0.3),true)});
-  await scene(n++,T,['#cutPad','#jogR'],'<b>Transformer</b>: drag the record slowly and tap <b>CUT</b> in time with the beat.',async()=>{
+  await scene(n++,T,['#cutPad','#jogR'],'<b>Transformer scratch</b>: drag the record slowly and tap the pad in time with the beat.',async()=>{
     const bl=60/(A.bpm*ratio(A));await demoStrokes(B,[[4,.5],[4,-.5]],(i,dir,u,t)=>{const ph=(t/(bl*500))%1;demoPad(ph<0.45)},true)});
-  await scene(n++,T,['#xlock'],'Learning? <b>AUTO FWD</b> works the crossfader for you: it opens only while the record moves forward.',async()=>{press('#xlock [data-xm=fwd]');SCR.auto='fwd';SCR.cur=null;renderScr();
+  await scene(n++,T,['#xlock'],'Learning? <b>AUTO FWD</b> works the crossfader for you: it opens only while the record moves forward. <b>AUTO TRANSFORMER</b> chops in time.',async()=>{setTransformer(false);press('#xlock [data-xm=fwd]');SCR.auto='fwd';SCR.cur=null;renderScr();
     await demoStrokes(B,[[1,.3],[1,-.3],[1,.3],[1,-.3],[.5,.2],[.5,-.2],[.5,.2],[.5,-.2]]);SCR.auto='off';renderScr();xfader.set(restPhys())});
   await scene(n++,T,['#xlock','.mx-xf'],'<b>HAMSTER</b> flips the crossfader, the way many battle DJs like it. The A and B labels swap ends.',async()=>{const was=SCR.hamster;press('#xlock [data-sc=hamster]');SCR.hamster=!was;xfader.set(-mix.xf);renderScr();await dwait(2600);
     SCR.hamster=was;xfader.set(-mix.xf);renderScr();await dwait(500);press('#dkL [data-a=play]');togglePlay(A)});
@@ -2127,7 +2138,7 @@ async function demoStrokes(d,P,cb,grid){const bl=60/(decks[0].bpm*ratio(decks[0]
       const u=Math.min(1,(performance.now()-t0)/dur),o=disp*(1-Math.cos(Math.PI*u))/2;if(o!==last){post({t:'scratch',d:d.k,delta:o-last});d.hand.a+=(o-last)/(SEC_PER_REV*d.sens)*Math.PI*2;last=o}
       if(cb)cb(i,Math.sign(disp),u,performance.now()-T0);if(u<1)requestAnimationFrame(step);else res()};step()})}}
   finally{d.hand=null;d.touching=false;post({t:'touch',d:d.k,on:false});demoPad(false)}}
-function demoPad(open){if(!SCR.battle&&SCR.auto==='off'){return}if(SCR.auto!=='off')return;const was=$('cutPad').classList.contains('on');if(was===open)return;$('cutPad').classList.toggle('on',open);xfader.set(open?0:restPhys())}
+function demoPad(open){if(SCR.auto!=='off')return;if(TR.on){trSet(open);return}if(!SCR.battle)return;const was=$('cutPad').classList.contains('on');if(was===open)return;$('cutPad').classList.toggle('on',open);xfader.set(open?0:restPhys())}
 async function startDemo(){if(DEMO.on)return;const hamSaved=SCR.hamster;if(LES.on)quitLesson();if(curView!=='console')setView('console',true);ensureAudio().catch(()=>{});closeLib();closeSetup();$('welcome').hidden=true;
   DEMO.on=true;DEMO.abort=false;DEMO.paused=false;$('hudPause').textContent='Pause';$('hudProg').style.width='0';$('hudCap').innerHTML='Getting the decks ready…';
   $('hud').hidden=false;layout();placeTip();const st=$('stage');
@@ -2326,9 +2337,9 @@ const LESSONS=[
  /* ---- Battle: Deck A plays the Cypher Session beat, Deck B holds Scratch Tools, battle fader on ---- */
  {id:'fwd',group:'Battle',title:'Forward scratch',lvl:'Battle',view:'platters',about:'Hear only the push: the fader opens as the record goes forward and closes on the way back.',prep:()=>battlePrep(),
   steps:[
-   {t:()=>$('cutPad'),txt:'Deck A plays a hip hop beat. Deck B holds <b>Scratch Tools</b>: the white sticker marks the "Ahh". Hold the <b>CUT</b> pad and push Deck B\'s record forward to hear it.',
+   {t:()=>$('cutPad'),txt:'Deck A plays a hip hop beat. Deck B holds <b>Scratch Tools</b>: the white sticker marks the "Ahh". Hold the <b>TRANSFORMER</b> pad and push Deck B\'s record forward to hear it.',
     init:()=>{LES.sc.on=true;return{k:LES.sc.strokes.length}},done:s=>doneStrokes(s.k).some(x=>x.dir>0&&x.o/x.f>0.5)},
-   {t:()=>$('jogR'),txt:'Now the <b>forward scratch</b>: hold CUT and push forward, <b>let go of CUT</b>, then pull back in silence. Do 8. Tip: pad 1 under Deck B jumps back to the Ahh.',
+   {t:()=>$('jogR'),txt:'Now the <b>forward scratch</b>: hold the pad and push forward, <b>let go of the pad</b>, then pull back in silence. Do 8. Tip: pad 1 under Deck B jumps back to the Ahh.',
     init:()=>({k:LES.sc.strokes.length}),done:s=>{const st=doneStrokes(s.k);let good=0,fw=0;
       for(let i=0;i<st.length;i++)if(st[i].dir>0){fw++;const nx=st[i+1];if(st[i].o/st[i].f>0.6&&nx&&nx.dir<0&&nx.o/nx.f<0.35)good++}
       LES.q.good=good;LES.q.tries=fw;return good>=8}}],
@@ -2336,21 +2347,21 @@ const LESSONS=[
   result:r=>r.q.tries?`${r.q.good} clean forward scratches out of ${r.q.tries} pushes`:''},
  {id:'chirp',group:'Battle',title:'Chirp',lvl:'Battle',view:'platters',about:'Cut the end of every push to make the sound "chirp", like a bird.',prep:()=>battlePrep(),
   steps:[
-   {t:()=>$('cutPad'),txt:'Hold <b>CUT</b>, push the record forward and <b>let go of CUT while the record is still moving</b>, so the end of the push is cut off. Press CUT again as you pull back. Do 6 chirps.',
+   {t:()=>$('cutPad'),txt:'Hold the <b>TRANSFORMER</b> pad, push the record forward and <b>let go while the record is still moving</b>, so the end of the push is cut off. Press the pad again as you pull back. Do 6 chirps.',
     init:()=>{LES.sc.on=true;return{k:LES.sc.strokes.length}},done:s=>{const st=doneStrokes(s.k).filter(x=>x.dir>0);
       const good=st.filter(x=>x.s&&!x.e&&x.o/x.f>0.2).length;LES.q.good=good;LES.q.tries=st.length;return good>=6}}],
   stars:r=>r.skipped?1:(r.q.good/Math.max(r.q.tries,1))>=0.75?3:(r.q.good/Math.max(r.q.tries,1))>=0.5?2:1,
   result:r=>r.q.tries?`${r.q.good} chirps out of ${r.q.tries} pushes`:''},
  {id:'trans',group:'Battle',title:'Transformer',lvl:'Battle',view:'platters',about:'Move the record slowly while tapping the fader open in time: the sound "transforms".',prep:()=>battlePrep(),
   steps:[
-   {t:()=>$('cutPad'),txt:'Drag Deck B\'s record <b>slowly</b> forward or back with one hand, and <b>tap CUT</b> with the other, in time: two taps for every kick drum. 12 taps.',
+   {t:()=>$('cutPad'),txt:'Drag Deck B\'s record <b>slowly</b> forward or back with one hand, and <b>tap the TRANSFORMER pad</b> with the other, in time: two taps for every kick drum. 12 taps.',
     init:()=>{LES.sc.on=true;return{k:LES.sc.edges.length}},done:s=>{const taps=LES.sc.edges.slice(s.k).filter(x=>x.open&&x.moving);
       LES.q.on=taps.slice(0,12).filter(x=>Math.abs(x.e8)<60).length;return taps.length>=12}}],
   stars:r=>r.skipped||r.q.on==null?1:r.q.on>=9?3:r.q.on>=6?2:1,
   result:r=>r.q.on!=null?`${r.q.on} of 12 taps landed in time${r.q.on>=9?': sharp!':'. Get 9 or more for 3 stars.'}`:''},
  {id:'flare',group:'Battle',title:'One-click flare',lvl:'Battle',view:'platters',about:'Start open and click the sound off once in the middle of each stroke.',prep:()=>battlePrep(),
   steps:[
-   {t:()=>$('cutPad'),txt:'Hold <b>CUT</b> with one finger and push the record. In the middle of the push, <b>tap CUT with a second finger</b>: that clicks the sound off for an instant. Pull back and click again. 6 strokes with a click.',
+   {t:()=>$('cutPad'),txt:'Hold the <b>TRANSFORMER</b> pad with one finger and push the record. In the middle of the push, <b>tap the pad with a second finger</b>: that clicks the sound off for an instant. Pull back and click again. 6 strokes with a click.',
     init:()=>{LES.sc.on=true;return{k:LES.sc.strokes.length}},done:s=>{const st=doneStrokes(s.k);
       const good=st.filter(x=>x.clicks>=1&&x.o/x.f>0.6).length;LES.q.good=good;LES.q.tries=st.length;return good>=6}}],
   stars:r=>r.skipped?1:(r.q.good/Math.max(r.q.tries,1))>=0.7?3:(r.q.good/Math.max(r.q.tries,1))>=0.45?2:1,
@@ -2363,11 +2374,11 @@ const LESSONS=[
     init:()=>({k:LES.sc.edges.length,t0:performance.now()}),done:s=>{const A=decks[0],secs=8*4*60/(A.bpm*ratio(A));if((performance.now()-s.t0)/1000<secs)return false;
       const cuts=LES.sc.edges.slice(s.k).filter(x=>x.open&&x.moving);LES.q.cuts=cuts.length;LES.q.on=cuts.filter(x=>Math.abs(x.e8)<60).length;return true}}],
   stars:r=>{if(r.skipped||!r.q.cuts)return 1;const k=r.q.on/r.q.cuts;return r.q.cuts>=16&&k>=0.7?3:r.q.cuts>=8&&k>=0.5?2:1},
-  result:r=>r.q.cuts?`${r.q.cuts} cuts, ${Math.round(r.q.on/r.q.cuts*100)}% in time${r.q.cuts<16?'. Aim for 16+ cuts.':''}`:'No cuts this time. Use CUT or the crossfader while you scratch.'},
+  result:r=>r.q.cuts?`${r.q.cuts} cuts, ${Math.round(r.q.on/r.q.cuts*100)}% in time${r.q.cuts<16?'. Aim for 16+ cuts.':''}`:'No cuts this time. Use the TRANSFORMER pad or the crossfader while you scratch.'},
 ];
 /* battle lessons: hip hop beat on A, the tool record on B (cued on the Ahh), battle fader on */
 async function battlePrep(){const ld=async(k,i)=>{const t=lib.tracks.find(x=>x.demo===i);if(t&&decks[k].name!==DEMOS[i].name)await loadTrack(k,t)};
-  await ld(0,4);await ld(1,5);setView('platters',true);SCR.deck='B';setBattle(true);ui.L.cf.set(0.85);ui.R.cf.set(0.95);const B=decks[1];seek(B,B.hot[0]!=null?B.hot[0]:B.cue);await playDeck(A_());renderScr();refreshAll()}
+  await ld(0,4);await ld(1,5);setView('platters',true);SCR.deck='B';setBattle(true);setTransformer(true);ui.L.cf.set(0.85);ui.R.cf.set(0.95);const B=decks[1];seek(B,B.hot[0]!=null?B.hot[0]:B.cue);await playDeck(A_());renderScr();refreshAll()}
 const lesProg=()=>LS.get('sl-lessons',{});
 const starStr=n=>'★'.repeat(n)+'☆'.repeat(3-n);
 function openLessons(){closeLib();closeSetup();renderLessons();$('lessons').classList.add('open')}
