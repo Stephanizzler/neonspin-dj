@@ -2001,7 +2001,7 @@ addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;$('in
 $('installBtn').onclick=async()=>{if(!installEvt)return;installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;$('installBtn').hidden=true};
 addEventListener('appinstalled',()=>{$('installBtn').hidden=true;toast('SoundLab DJ is installed. Open it from your home screen.',4000)});
 /* updates: check for a new version on every launch and whenever the app comes back to the screen; load it straight away when nothing is playing */
-const APP_VER=20;try{$('verTxt').textContent='version '+APP_VER}catch(e){}
+const APP_VER=21;try{$('verTxt').textContent='version '+APP_VER}catch(e){}
 if(document.querySelector('link[rel=manifest]')&&'serviceWorker' in navigator){
   const hadSW=!!navigator.serviceWorker.controller;let reloading=false;
   navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{
@@ -2352,7 +2352,7 @@ const LESSONS=[
   steps:[
    {t:()=>$('cutPad'),txt:'Hold <b>CUT</b> with one finger and push the record. In the middle of the push, <b>tap CUT with a second finger</b>: that clicks the sound off for an instant. Pull back and click again. 6 strokes with a click.',
     init:()=>{LES.sc.on=true;return{k:LES.sc.strokes.length}},done:s=>{const st=doneStrokes(s.k);
-      const good=st.filter(x=>x.s&&x.e&&x.tr>=2&&x.tr<=4).length;LES.q.good=good;LES.q.tries=st.length;return good>=6}}],
+      const good=st.filter(x=>x.clicks>=1&&x.o/x.f>0.6).length;LES.q.good=good;LES.q.tries=st.length;return good>=6}}],
   stars:r=>r.skipped?1:(r.q.good/Math.max(r.q.tries,1))>=0.7?3:(r.q.good/Math.max(r.q.tries,1))>=0.45?2:1,
   result:r=>r.q.tries?`${r.q.good} flares out of ${r.q.tries} strokes`:''},
  {id:'round',group:'Battle',title:'Battle round',lvl:'Battle final',view:'platters',about:'8 bars over the beat, any techniques. Scored on how many of your cuts land in time.',prep:()=>battlePrep(),
@@ -2421,7 +2421,8 @@ function lesXf(open){const sc=LES.sc;if(!LES.on||!sc.on||open===sc.lastOpen)retu
 /* fader state at time t, and a stroke's stats, worked out afterwards from timestamps (so fader moves right at a turn count for the right stroke) */
 function lesOpenAt(t){const ed=LES.sc.edges;for(let i=ed.length-1;i>=0;i--)if(ed[i].t<=t)return ed[i].open;return LES.sc.open0}
 function strokeStats(st){const sc=LES.sc,t1=st.t1==null?performance.now():st.t1;let f=0,o=0;for(const x of sc.fr)if(x.t>=st.t0&&x.t<t1){f++;if(x.open)o++}
-  return{f,o,s:lesOpenAt(st.t0+(t1-st.t0)*0.2),e:lesOpenAt(t1-1),tr:sc.edges.filter(x=>x.t>st.t0&&x.t<t1).length}}
+  const ed=sc.edges.filter(x=>x.t>st.t0&&x.t<t1);let clicks=0;for(let i=0;i+1<ed.length;i++)if(!ed[i].open&&ed[i+1].open&&ed[i+1].t-ed[i].t<200)clicks++;   /* quick click-offs */
+  return{f,o,s:lesOpenAt(st.t0+(t1-st.t0)*0.2),e:lesOpenAt(t1-1),tr:ed.length,clicks}}
 const doneStrokes=k=>LES.sc.strokes.slice(k).filter(x=>x.t1!=null).map(x=>Object.assign({dir:x.dir},strokeStats(x))).filter(x=>x.f>2);
 function lesFrame(){if(!LES||!LES.on||!LES.sc.on)return;const sc=LES.sc,d=decks[1],now=performance.now();if(sc.lastOpen==null){sc.lastOpen=xfGains()[1]>0.5;sc.open0=sc.lastOpen}
   const last=sc.strokes[sc.strokes.length-1];
