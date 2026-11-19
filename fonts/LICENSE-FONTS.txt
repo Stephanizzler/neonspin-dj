@@ -1,0 +1,9 @@
+The fonts in this folder are used under the SIL Open Font License, Version 1.1
+(https://openfontlicense.org).
+
+Outfit: Copyright 2021 The Outfit Project Authors (https://github.com/Outfitio/Outfit-Fonts)
+JetBrains Mono: Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)
+
+These fonts are free software: they may be used, bundled and redistributed with
+software, but may not be sold on their own. The SoundLab DJ licence does not
+apply to these font files.
